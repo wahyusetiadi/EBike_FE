@@ -2,6 +2,26 @@
     scrollbar-width: none; /* Firefox */
   }
 
-  .no-scrollbar::-webkit-scrollbar {
+ .no-scrollbar::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Edge */
   }
+
+.sidebar-shell {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background: #fff;
+  padding: 24px 18px;
+  color: #64746d;
+  font-size: 14px;
+}
+
+.sidebar-brand { position: sticky; top: 0; z-index: 1; padding-bottom: 13px; background: #fff; }
+.sidebar-brand button { cursor: pointer; }
+.sidebar-menu { display: block; width: 100%; }
+.sidebar-menu h1 { margin: 10px 0 14px; color: #9aa59f; font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+.sidebar-menu > div > div { gap: 7px; }
+
+@media (max-width: 767px) {
+  .sidebar-shell { display: none; }
+}

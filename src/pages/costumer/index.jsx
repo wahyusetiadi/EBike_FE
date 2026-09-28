@@ -1,246 +1,126 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { PlusIcon, UserGroupIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { ContentLayout } from "../../components/organisms/ContentLayout";
-import { ButtonIcon } from "../../components/molecules/ButtonIcon";
-import { PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { TableData } from "../../components/organisms/TableData";
-import {
-  createCustomer,
-  deleteCustomerData,
-  getAllCustomerData,
-} from "../../api/api";
+import { createCustomer, deleteCustomerData, getAllCustomerData } from "../../api/api";
+import "./style.css";
+
+const emptyForm = { name: "", telp: "", type: "", nik: "", npwp: "" };
 
 export const CostumerPage = () => {
-  const [customer, setCustomer] = useState([]);
-  const [isShowAddCustomer, setIsShowAddCustomer] = useState(false);
-  const [message, setMessage] = useState("");
+  const [customers, setCustomers] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(true);
+  const nameRef = useRef(null);
 
-  const [name, setName] = useState("");
-  const [telp, setTelp] = useState("");
-  const [type, setType] = useState("");
-  const [nik, setNik] = useState("-");
-  const [npwp, setNpwp] = useState("-");
-
-  const handleOpenModalAddCustomer = () => {
-    setIsShowAddCustomer(true);
-  };
-
-  const handleCloseAddCustomer = () => {
-    setIsShowAddCustomer(false);
-  };
-
-  const fetchDataCustomer = async () => {
+  const loadCustomers = async () => {
+    setLoading(true);
     try {
       const data = await getAllCustomerData();
-      setCustomer(data);
+      setCustomers(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Error fetching data customer", error);
+      console.error("Gagal memuat pelanggan:", error);
+      setNotice("Data pelanggan belum dapat dimuat.");
+    } finally {
+      setLoading(false);
     }
   };
 
+  useEffect(() => { loadCustomers(); }, []);
   useEffect(() => {
-    fetchDataCustomer();
-  }, []);
+    if (!modalOpen) return;
+    nameRef.current?.focus();
+    const onKeyDown = (event) => {
+      if (event.key === "Escape" && !saving) setModalOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [modalOpen, saving]);
+
+  const openModal = () => {
+    setForm(emptyForm);
+    setFormError("");
+    setModalOpen(true);
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    const telpValue = telp.replace(/[^0-9]/g, "");
-
-    if (!telpValue || isNaN(telpValue)) {
-      setMessage("Nomor telepon tidak valid.");
+    const phone = form.telp.replace(/[^0-9]/g, "");
+    if (!form.name.trim() || !phone || !form.type) {
+      setFormError("Isi nama, nomor telepon, dan jenis pelanggan.");
       return;
     }
-
-    const customerData = {
-      name: name,
-      telp: telpValue,
-      type: type,
-      nik: nik,
-      npwp: npwp,
-    };
-
+    setSaving(true);
+    setFormError("");
     try {
-      const result = await createCustomer(customerData);
-      setMessage(`Customer Berhasil tambahkan: ${result.data.name}`);
-      handleCloseAddCustomer();
-      fetchDataCustomer();
-      setName("");
-      setTelp("");
-      setType("");
-      setNik("");
-      setNpwp("");
+      await createCustomer({
+        name: form.name.trim(),
+        telp: phone,
+        type: form.type,
+        nik: form.nik.trim() || "-",
+        npwp: form.npwp.trim() || "-",
+      });
+      setModalOpen(false);
+      setNotice("Pelanggan berhasil ditambahkan.");
+      await loadCustomers();
     } catch (error) {
-      setMessage(`Error: ${error.message}`);
+      setFormError(error.message || "Pelanggan gagal ditambahkan.");
     } finally {
-      setTimeout(() => {
-        setMessage("");
-      }, 3000);
+      setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    setLoading(true);
     try {
-      const response = await deleteCustomerData(id);
-      const data = await fetchDataCustomer();
+      await deleteCustomerData(id);
+      setNotice("Pelanggan berhasil dihapus.");
+      await loadCustomers();
     } catch (error) {
-      console.error("Error delete Customer", error);
-    } finally {
-      setMessage(`Data pelanggan dengan ID ${id} berhasil di hapus`);
-      setLoading(false);
-
-      setTimeout(() => {
-        setMessage("");
-      }, 3000);
+      console.error("Gagal menghapus pelanggan:", error);
+      setNotice("Pelanggan gagal dihapus. Silakan coba lagi.");
     }
   };
 
   return (
-    <div>
-      <ContentLayout>
-        {message && (
-          <>
-            <div className="w-full mt-4 p-4 fixed bg-green-100 border-l-4 border-green-500 text-green-700">
-              <p>{message}</p>
-            </div>
-          </>
-        )}
-        <div className="px-6 py-4">
-          {/* HEAD TITLE */}
-          <div className="w-full flex items-center">
-            <div className="text-nowrap w-fit">
-              <h1 className="text-2xl font-bold">Pelanggan</h1>
-              <p className="text-sm text-slate-700">
-                Cek Riwayat Pembelian Pelanggan
-              </p>
-            </div>
-            <div className="w-full flex items-center justify-end gap-2">
-              <ButtonIcon
-                icon={<PlusIcon className="size-5 text-white" />}
-                showArrow={false}
-                title="Tambah Pelanggan"
-                classNameBtn="border-2 rounded-lg bg-orange-500 hover:bg-orange-600 px-2 py-1"
-                titleColor="text-white"
-                onClick={handleOpenModalAddCustomer}
-              />
-            </div>
-          </div>
-          <hr className="my-4" />
+    <ContentLayout>
+      <main className="customers-page">
+        <header className="customers-header">
+          <div><span><UserGroupIcon /> DATA PELANGGAN</span><h1>Pelanggan</h1><p>Kelola data pelanggan untuk transaksi eceran dan grosir.</p></div>
+          <button type="button" onClick={openModal}><PlusIcon /> Tambah pelanggan</button>
+        </header>
+        {notice && <p className="customers-notice" role="status">{notice}</p>}
+        <section className="customers-list" aria-label="Daftar pelanggan">
+          <div className="customers-list__heading"><div><h2>Daftar pelanggan</h2><p>{loading ? "Memuat data..." : `${customers.length} pelanggan terdaftar`}</p></div></div>
+          <TableData data={customers} itemsPerPage={10} showSearchSet sortedData showAksi showEditCustomerBtn showDeleteCustomerBtn onDelete={handleDelete} onUpdate={loadCustomers} />
+        </section>
+      </main>
 
-          <div className="">
-            <TableData
-              data={customer}
-              itemsPerPage={10}
-              showSearchSet={true}
-              sortedData={true}
-              showAksi={true}
-              showEditCustomerBtn={true}
-              showDeleteCustomerBtn={true}
-              onDelete={handleDelete}
-            />
-          </div>
-        </div>
-
-        {isShowAddCustomer && (
-          <div className="w-full fixed inset-0 flex items-center justify-center">
-            <div className="w-full h-screen bg-black absolute opacity-50"></div>
-            <div className="bg-white px-6 py-10 rounded-lg shadow-lg z-10 w-[480px] flex items-center justify-center flex-col gap-8">
-              <div className="w-full flex flex-col items-center justify-center">
-                <div className="w-full flex flex-col items-center justify-center px-4">
-                  <div className="w-full flex items-center justify-between">
-                    <h3 className="text-xl font-semibold">Tambah Pelanggan</h3>
-                    <XMarkIcon
-                      className="text-black size-7 cursor-pointer"
-                      onClick={handleCloseAddCustomer}
-                    />
-                  </div>
-
-                  <hr className="w-full my-4" />
-                  <form action="" className="w-full" onSubmit={handleSubmit}>
-                    <div className="w-full flex flex-col gap-2">
-                      <label htmlFor="" className="text-base font-bold">
-                        Nama Pelanggan
-                      </label>
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Masukkan Nama Pelanggan"
-                        className="px-4 py-2 border-2 rounded"
-                      />
-                    </div>
-
-                    <div className="w-full flex flex-col gap-2 mt-8">
-                      <label htmlFor="noTelp" className="text-base font-bold">
-                        No. Telp Pelanggan
-                      </label>
-                      <input
-                        type="number"
-                        value={telp}
-                        onChange={(e) => setTelp(e.target.value)}
-                        placeholder="08XXXX"
-                        className="px-4 py-2 border-2 rounded"
-                        pattern="[0-9]*" // Membatasi input hanya angka
-                        inputMode="numeric" // Menentukan bahwa input berupa angka
-                      />
-                    </div>
-
-                    <div className="w-full flex flex-col gap-2 mt-8">
-                      <label htmlFor="" className="text-base font-bold">
-                        Jenis Pelanggan
-                      </label>
-                      <select
-                        value={type}
-                        onChange={(e) => setType(e.target.value)}
-                        className="px-4 py-2 border-2 rounded"
-                      >
-                        <option value="" disabled>
-                          Pilih jenis
-                        </option>
-                        <option value="VIP">VIP</option>
-                        <option value="Regular">Regular</option>
-                      </select>
-                    </div>
-
-                    <div className="w-full flex flex-col gap-2">
-                      <label htmlFor="" className="text-base font-bold">
-                        NIK
-                      </label>
-                      <input
-                        type="text"
-                        value={nik}
-                        onChange={(e) => setNik(e.target.value)}
-                        placeholder="Masukkan Nama Pelanggan"
-                        className="px-4 py-2 border-2 rounded"
-                      />
-                    </div>
-
-                    <div className="w-full flex flex-col gap-2">
-                      <label htmlFor="" className="text-base font-bold">
-                        NPWP
-                      </label>
-                      <input
-                        type="text"
-                        value={npwp}
-                        onChange={(e) => setNpwp(e.target.value)}
-                        placeholder="Masukkan Nama Pelanggan"
-                        className="px-4 py-2 border-2 rounded"
-                      />
-                    </div>
-
-                    <div className="w-full flex gap-4 items-center justify-between mt-8">
-                      <button className="w-full px-10 py-3 text-white text-base font-semibold bg-orange-600 rounded-full">
-                        Simpan
-                      </button>
-                    </div>
-                  </form>
-                </div>
+      {modalOpen && (
+        <div className="customer-modal-layer">
+          <button type="button" className="customer-modal-backdrop" aria-label="Tutup formulir tambah pelanggan" onClick={() => !saving && setModalOpen(false)} />
+          <section className="customer-modal" role="dialog" aria-modal="true" aria-labelledby="customer-modal-title">
+            <header className="customer-modal__header">
+              <div><span>PELANGGAN BARU</span><h2 id="customer-modal-title">Tambah pelanggan</h2><p>Masukkan informasi yang diperlukan untuk transaksi.</p></div>
+              <button type="button" className="customer-modal__close" aria-label="Tutup" onClick={() => setModalOpen(false)} disabled={saving}><XMarkIcon /></button>
+            </header>
+            <form onSubmit={handleSubmit}>
+              <div className="customer-modal__fields">
+                <div className="customer-modal__field customer-modal__field--full"><label htmlFor="customer-name">Nama pelanggan <span>*</span></label><input id="customer-name" ref={nameRef} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Contoh: Budi Santoso" required /></div>
+                <div className="customer-modal__field"><label htmlFor="customer-phone">Nomor telepon <span>*</span></label><input id="customer-phone" type="tel" inputMode="numeric" value={form.telp} onChange={(event) => setForm({ ...form, telp: event.target.value })} placeholder="08xxxxxxxxxx" required /></div>
+                <div className="customer-modal__field"><label htmlFor="customer-type">Jenis pelanggan <span>*</span></label><select id="customer-type" value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} required><option value="" disabled>Pilih jenis</option><option value="VIP">VIP</option><option value="Regular">Regular</option></select></div>
+                <div className="customer-modal__field"><label htmlFor="customer-nik">NIK <small>Opsional</small></label><input id="customer-nik" value={form.nik} onChange={(event) => setForm({ ...form, nik: event.target.value })} placeholder="Nomor identitas" /></div>
+                <div className="customer-modal__field"><label htmlFor="customer-npwp">NPWP <small>Opsional</small></label><input id="customer-npwp" value={form.npwp} onChange={(event) => setForm({ ...form, npwp: event.target.value })} placeholder="Nomor NPWP" /></div>
               </div>
-            </div>
-          </div>
-        )}
-      </ContentLayout>
-    </div>
+              {formError && <p className="customer-modal__error" role="alert">{formError}</p>}
+              <footer className="customer-modal__actions"><button type="button" onClick={() => setModalOpen(false)} disabled={saving}>Batal</button><button type="submit" disabled={saving}>{saving ? "Menyimpan..." : "Simpan pelanggan"}</button></footer>
+            </form>
+          </section>
+        </div>
+      )}
+    </ContentLayout>
   );
 };

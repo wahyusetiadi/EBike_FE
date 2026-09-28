@@ -1,10 +1,15 @@
 import React, { useEffect } from "react";
 import { formatCurrency } from "../../../utils";
+import "../receipt.css";
+import { Link } from "react-router-dom";
+import { getReceiptSettings } from "../../../utils/receiptSettings";
+import { ReceiptFooter, ReceiptHeader } from "../../../components/organisms/ReceiptSections";
 
 export const Payment = () => {
+  const receiptSettings = getReceiptSettings();
   const date = new Date();
   const transactionCode = sessionStorage.getItem("transactionCode");
-  const addedItems = JSON.parse(sessionStorage.getItem("addedItems"));
+  const addedItems = JSON.parse(sessionStorage.getItem("addedItems") || "[]");
   const total = sessionStorage.getItem("total");
   const description = sessionStorage.getItem("description");
   const customer = sessionStorage.getItem("customers");
@@ -41,24 +46,19 @@ export const Payment = () => {
     printWindow.document.write(`
       <html>
         <head>
-          <title>Struk Pembelian</title>
+          <title>Struk</title>
           <style>
-            body {
-              font-family: 'Courier New', monospace;
-              padding: 10px;
-              font-size: 12px;
-              color: #333;
-            }
+            @page { margin: 7mm; }
+            body { font-family: 'Courier New', monospace; width: 80mm; margin: 0 auto; padding: 0; font-size: 12px; line-height: 1.5; color: #111; }
+            hr { border: 0; border-top: 1px dashed #999; margin: 10px 0; }
+            h1, p { margin: 0 0 4px; }
             .text-center {
               text-align: center;
             }
             .text-start {
               text-align: left;
             }
-            .flex {
-              display: flex;
-              justify-content: space-between;
-            }
+            .flex { display: flex; justify-content: space-between; gap: 8px; }
             .gap-2 {
               gap: 8px;
             }
@@ -84,26 +84,29 @@ export const Payment = () => {
     `);
 
     printWindow.document.close(); // Penting untuk menyelesaikan proses dokumen
+    printWindow.document.title = receiptSettings.receiptTitle;
+    printWindow.focus();
     printWindow.print(); // Melakukan print
   };
 
+  if (!transactionCode && addedItems.length === 0) {
+    return <div className="receipt-page"><div className="receipt-empty"><h1>Struk belum tersedia</h1><p>Selesaikan transaksi terlebih dahulu untuk melihat dan mencetak struk.</p><Link to="/transaksi/eceran">Mulai transaksi</Link></div></div>;
+  }
+
   return (
-    <div>
+    <div className="receipt-page">
+      <div className="receipt-page__intro"><h1>Struk transaksi</h1><p>Periksa rincian sebelum mencetak.</p></div>
       <div className="w-full flex justify-center">
         <div
           id="print-content"
-          className="w-[375px] my-4 flex flex-col bg-white rounded-lg p-4 text-xs font-mono border border-gray-300"
+          className="receipt-card flex flex-col"
         >
           {/* Header */}
-          <div className="text-center">
-            <h1 className="font-bold">E-Bike Management</h1>
-            <p>Jl. Veteran No. 123</p>
-            <p>Telp: 0812-3456-7890</p>
-          </div>
+          <ReceiptHeader settings={receiptSettings} />
 
           <div className="mt-2 text-sm">
             <div className="text-center">
-              <p className="font-semibold">Struk Pembelian</p>
+              <p className="font-semibold">{receiptSettings.receiptTitle}</p>
               <p>
                 ID Transaksi: <br /> {transactionCode}
               </p>
@@ -186,20 +189,14 @@ export const Payment = () => {
           <hr className="my-2" />
 
           {/* Footer */}
-          <div className="text-center text-xs text-gray-600">
-            <p>
-              Terima kasih telah berbelanja di <br /> E-Bike Management
-            </p>
-            <p>www.ebikemanagement.com</p>
-            <p>Pastikan untuk menyimpan struk ini sebagai bukti transaksi.</p>
-          </div>
+          <ReceiptFooter settings={receiptSettings} />
         </div>
       </div>
 
-      <div className="pb-4 flex justify-center">
+      <div className="receipt-actions">
         <button
           onClick={handlePrint}
-          className="bg-orange-600 text-white px-4 py-2 rounded-full text-sm"
+          className="receipt-print-button"
         >
           Cetak Struk
         </button>

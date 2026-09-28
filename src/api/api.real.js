@@ -613,10 +613,9 @@ export const exportOutbond = async (fromDate, toDate) => {
 // IMPORT DATA KE DATABASE
 
 export const uploadFile = (formData) => {
+  const token = localStorage.getItem("jwtToken");
   return axios.post(`${BASE_URL}/products/import-product`, formData, {
-    headers: {
-      "Content-Type": "multipart/form-datad",
-    },
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
 };
 

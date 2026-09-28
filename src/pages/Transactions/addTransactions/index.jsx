@@ -10,6 +10,7 @@ import {
   getAllCustomerTransactions,
 } from "../../../api/api";
 import { formatCurrency } from "../../../utils";
+import { generateTransactionCode } from "../../../utils/receiptSettings";
 
 export const AddTransactions = () => {
   const navigate = useNavigate();
@@ -214,16 +215,8 @@ export const AddTransactions = () => {
     }, 0);
   };
 
-  const generateTransactionCode = () => {
-    const date = new Date();
-    const randomNumber = Math.floor(Math.random() * 1000000);
-    return `GMJ-${date.getFullYear()}${
-      date.getMonth() + 1
-    }${date.getDate()}-${randomNumber}`;
-  };
-
   useEffect(() => {
-    setTransactionCode(generateTransactionCode);
+    setTransactionCode(generateTransactionCode());
   }, []);
 
   useEffect(() => {

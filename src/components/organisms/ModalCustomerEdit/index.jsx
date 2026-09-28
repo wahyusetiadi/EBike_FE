@@ -1,181 +1,68 @@
-import { XMarkIcon } from "@heroicons/react/20/solid";
-import React, { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import { updateCustomerData } from "../../../api/api";
 
-export const ModalCustomerEdit = ({
-  onClick,
-  id,
-  name,
-  telp,
-  type,
-  nik, 
-  npwp,
-  onUpdate,
-}) => {
-  const [formData, setFormData] = useState({
-    name,
-    telp,
-    type,
-    nik,
-    npwp,
+export const ModalCustomerEdit = ({ onClick, id, name, telp, type, nik, npwp, onUpdate }) => {
+  const [form, setForm] = useState({
+    name: name || "",
+    telp: telp || "",
+    type: type || "",
+    nik: nik === "-" ? "" : nik || "",
+    npwp: npwp === "-" ? "" : npwp || "",
   });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const closeRef = useRef(null);
 
-  console.log(' form data ', formData);
-  
-
-  const customerType = ["VIP", "Reguler"];
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const updateData = {
-      name: formData.name,
-      telp: formData.telp,
-      type: formData.type,
-      nik: formData.nik,
-      npwp: formData.npwp,
+  useEffect(() => {
+    closeRef.current?.focus();
+    const onKeyDown = (event) => {
+      if (event.key === "Escape" && !saving) onClick();
     };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClick, saving]);
 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const phone = String(form.telp).replace(/[^0-9]/g, "");
+    if (!form.name.trim() || !phone || !form.type) {
+      setError("Isi nama, nomor telepon, dan jenis pelanggan.");
+      return;
+    }
+    setSaving(true);
+    setError("");
     try {
-      const response = await updateCustomerData(id, updateData);
-      console.log("Customer berhasil di update", response);
+      await updateCustomerData(id, {
+        name: form.name.trim(),
+        telp: phone,
+        type: form.type,
+        nik: form.nik.trim() || "-",
+        npwp: form.npwp.trim() || "-",
+      });
       onClick();
-      if (onUpdate) {
-        onUpdate();
-      }
-    } catch (error) {
-      console.error("Error updating product", error);
+      onUpdate?.();
+    } catch (err) {
+      setError(err.message || "Perubahan pelanggan gagal disimpan.");
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <div className="w-[560px] p-8 h-auto rounded-lg bg-white z-50 max-md:w-[300px] max-md:p-6">
-      <div className="w-full flex">
-        <div className="w-full flex items-center justify-start">
-          <h1 className="text-2xl max-md:text-lg font-bold">Edit Customer</h1>
+    <section className="customer-modal" role="dialog" aria-modal="true" aria-labelledby="customer-edit-title">
+      <header className="customer-modal__header"><div><span>DATA PELANGGAN</span><h2 id="customer-edit-title">Edit pelanggan</h2><p>Perbarui informasi kontak dan identitas pelanggan.</p></div><button type="button" ref={closeRef} className="customer-modal__close" aria-label="Tutup" onClick={onClick} disabled={saving}><XMarkIcon /></button></header>
+      <form onSubmit={handleSubmit}>
+        <div className="customer-modal__fields">
+          <div className="customer-modal__field customer-modal__field--full"><label htmlFor="edit-customer-name">Nama pelanggan <span>*</span></label><input id="edit-customer-name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /></div>
+          <div className="customer-modal__field"><label htmlFor="edit-customer-phone">Nomor telepon <span>*</span></label><input id="edit-customer-phone" type="tel" inputMode="numeric" value={form.telp} onChange={(event) => setForm({ ...form, telp: event.target.value })} required /></div>
+          <div className="customer-modal__field"><label htmlFor="edit-customer-type">Jenis pelanggan <span>*</span></label><select id="edit-customer-type" value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} required><option value="" disabled>Pilih jenis</option><option value="VIP">VIP</option><option value="Regular">Regular</option>{form.type && !["VIP", "Regular"].includes(form.type) && <option value={form.type}>{form.type}</option>}</select></div>
+          <div className="customer-modal__field"><label htmlFor="edit-customer-nik">NIK <small>Opsional</small></label><input id="edit-customer-nik" value={form.nik} onChange={(event) => setForm({ ...form, nik: event.target.value })} placeholder="Nomor identitas" /></div>
+          <div className="customer-modal__field"><label htmlFor="edit-customer-npwp">NPWP <small>Opsional</small></label><input id="edit-customer-npwp" value={form.npwp} onChange={(event) => setForm({ ...form, npwp: event.target.value })} placeholder="Nomor NPWP" /></div>
         </div>
-        <div className="w-full flex items-center justify-end">
-          <button onClick={onClick}>
-            <XMarkIcon className="text-black size-6 max-md:size-5" />
-          </button>
-        </div>
-      </div>
-      <hr className="my-4" />
-      <div className="w-full flex gap-4">
-        <div className="w-full flex flex-col gap-2">
-          <form onSubmit={handleSubmit}>
-            <div className="w-full flex flex-col">
-              <label
-                htmlFor="name"
-                className="text-base max-md:text-xs font-bold text-slate-700"
-              >
-                Nama
-              </label>
-              <input
-                type="text"
-                name="name"
-                className="w-full px-4 py-2 border rounded max-md:text-xs"
-                placeholder="Masukkan Nama"
-                value={formData.name}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="w-full flex flex-col mt-4">
-              <label
-                htmlFor="telp"
-                className="text-base max-md:text-xs font-bold text-slate-700"
-              >
-                No. Telp
-              </label>
-              <input
-                type="number"
-                className="w-full px-4 py-2 border rounded max-md:text-xs"
-                value={formData.telp}
-                onChange={handleInputChange}
-                name="telp"
-              />
-            </div>
-            <div className="flex gap-4 mt-4">
-              <div className="w-full flex flex-col">
-                <label
-                  htmlFor="type"
-                  className="text-base max-md:text-xs font-bold text-slate-700"
-                >
-                  Tipe
-                </label>
-                <select
-                  className="w-full px-4 py-2 border rounded max-md:text-xs"
-                  value={formData.type}
-                  onChange={handleInputChange}
-                  name="type"
-                >
-                  <option value="" disabled>
-                    Pilih Tipe
-                  </option>
-                  {customerType
-                    .filter((option) => option !== formData.type)
-                    .map((option, index) => (
-                      <option key={index} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  {formData.type && (
-                    <option value={formData.type} selected>
-                      {formData.type}
-                    </option>
-                  )}
-                </select>
-              </div>
-            </div>
-            <div className="w-full flex flex-col mt-4">
-              <label
-                htmlFor="nik"
-                className="text-base max-md:text-xs font-bold text-slate-700"
-              >
-                NIK
-              </label>
-              <input
-                type="text"
-                name="nik"
-                className="w-full px-4 py-2 border rounded max-md:text-xs"
-                placeholder="Masukkan NIK"
-                value={formData.nik}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="w-full flex flex-col mt-4">
-              <label
-                htmlFor="npwp"
-                className="text-base max-md:text-xs font-bold text-slate-700"
-              >
-                NPWP
-              </label>
-              <input
-                type="text"
-                name="npwp"
-                className="w-full px-4 py-2 border rounded max-md:text-xs"
-                placeholder="Masukkan NPW"
-                value={formData.npwp}
-                onChange={handleInputChange}
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full py-4 bg-orange-600 text-base text-white font-semibold text-center rounded-full mt-4"
-            >
-              Simpan
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+        {error && <p className="customer-modal__error" role="alert">{error}</p>}
+        <footer className="customer-modal__actions"><button type="button" onClick={onClick} disabled={saving}>Batal</button><button type="submit" disabled={saving}>{saving ? "Menyimpan..." : "Simpan perubahan"}</button></footer>
+      </form>
+    </section>
   );
 };

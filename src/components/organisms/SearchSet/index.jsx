@@ -1,308 +1,72 @@
-import React, { useState, useEffect, useRef } from "react";
-import { ButtonIcon } from "../../molecules/ButtonIcon";
+import React, { useEffect, useRef, useState } from "react";
+import { AdjustmentsHorizontalIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { SeacrhField } from "../../molecules/SearchField";
-import { AdjustmentsHorizontalIcon } from "@heroicons/react/24/outline";
+import "./style.css";
 
-export const SearchSet = ({
-  onSearchChange,
-  filterStatus,
-  filterKategori,
-  sortedData,
-  onFilterChange,
-  onSortChange,
-}) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [serachQuery, setSearchQuery] = useState("");
-  const [status, setStatus] = useState(false);
-  const [kategori, setKategori] = useState(false);
-  const [sortFilter, setSortFilter] = useState(false);
-  const [isAscending, setIsAscending] = useState(true);
-
-  const statusRef = useRef(null);
-  const kategoriRef = useRef(null);
-  const sortRef = useRef(null);
-
-  const handleChangeStatus = (status) => {
-    setStatus(!status);
-    onFilterChange("status", status);
-  };
-
-  const handleChangeKategori = (kategori) => {
-    setKategori(!kategori);
-    onFilterChange("kategori", kategori);
-  };
-
-  const handleChangeSortFilter = (sortFilter) => {
-    setSortFilter(!sortFilter);
-    onSortChange("urutkan", sortFilter);
-  };
-
-  const handleSearchChange = (query) => {
-    setSearchQuery(query);
-    onSearchChange(query);
-  };
-
-  const handleSortChange = () => {
-    setIsAscending(!isAscending);
-    onSortChange(isAscending ? "asc" : "desc");
-  };
-
-  const handleClose = (e) => {
-    if (
-      statusRef.current &&
-      !statusRef.current.contains(e.target) &&
-      kategoriRef.current &&
-      !kategoriRef.current.contains(e.target) &&
-      sortRef.current &&
-      !sortRef.current.contains(e.target)
-    ) {
-      setStatus(false);
-      setKategori(false);
-      setSortFilter(false);
-    }
-  };
-
-  const toggleStatus = () => {
-    setStatus(!status);
-    if (kategori) {
-      setKategori(false);
-      setSortFilter(false);
-    }
-  };
-
-  const toggleKategori = () => {
-    setKategori(!kategori);
-    if (status) {
-      setStatus(false);
-      setSortFilter(false);
-    }
-  };
-
-  const toggleSortFilter = () => {
-    setSortFilter(!sortFilter);
-    if (sortFilter) {
-      setStatus(false);
-      setKategori(false);
-    }
-  };
-
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
+export const SearchSet = ({ onSearchChange, filterStatus, filterKategori, sortedData, onFilterChange, onSortChange }) => {
+  const [query, setQuery] = useState("");
+  const [openFilter, setOpenFilter] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedKategori, setSelectedKategori] = useState("");
+  const [sortDirection, setSortDirection] = useState("");
+  const toolbarRef = useRef(null);
 
   useEffect(() => {
-    setStatus(false);
-    setKategori(false);
-    setSortFilter(false);
-
-    document.addEventListener("click", handleClose);
-
-    return () => {
-      document.removeEventListener("click", handleClose);
+    const closeOnOutsideClick = (event) => {
+      if (!toolbarRef.current?.contains(event.target)) setOpenFilter(null);
     };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
   }, []);
 
+  const changeFilter = (type, value) => {
+    const nextValue = type === "status"
+      ? (selectedStatus === value ? "" : value)
+      : (selectedKategori === value ? "" : value);
+    if (type === "status") setSelectedStatus(nextValue);
+    else setSelectedKategori(nextValue);
+    onFilterChange?.(type, nextValue);
+    setOpenFilter(null);
+  };
+
+  const sort = (direction) => {
+    setSortDirection(direction);
+    onSortChange?.(direction);
+    setOpenFilter(null);
+  };
+
   return (
-    <div className="w-full flex max-md:flex-col max-md:gap-2 items-center mt-4">
-      <div className="w-full flex justify-start">
-        <SeacrhField
-          serachQuery={serachQuery}
-          onSearchChange={handleSearchChange}
-        />
-      </div>
-      <div className="w-full flex max-md:flex-col max-md:w-fit justify-end gap-2">
-        {/* Button for burger menu */}
-        <div className="md:hidden">
-          <ButtonIcon
-            title="Menu"
-            classNameBtn="border rounded px-2 py-1 hover:bg-slate-100"
-            onClick={toggleMenu} // Function to toggle burger menu
-          />
-        </div>
-
-        {/* Menu Items - Only visible on md and larger */}
-        <div className="hidden md:flex gap-2">
+    <div className="search-toolbar" ref={toolbarRef}>
+      <SeacrhField serachQuery={query} onSearchChange={(value) => { setQuery(value); onSearchChange?.(value); }} />
+      {(filterStatus || filterKategori || sortedData) && (
+        <div className="search-toolbar__filters" aria-label="Filter dan urutan data">
           {filterStatus && (
-            <div className="w-fit flex flex-col" ref={statusRef}>
-              <ButtonIcon
-                title="Status"
-                classNameBtn="border rounded px-2 py-1 hover:bg-slate-100"
-                onClick={toggleStatus}
-              />
-              {status && (
-                <div className="absolute mt-8 bg-orange-50 shadow text-sm">
-                  <ul>
-                    <li className="hover:bg-orange-100 w-full text-left">
-                      <button
-                        className="px-2 py-1"
-                        onClick={() => handleChangeStatus("Tersedia")}
-                      >
-                        Tersedia
-                      </button>
-                    </li>
-                    <li className="hover:bg-orange-100 w-full text-left">
-                      <button
-                        className="px-2 py-1"
-                        onClick={() => handleChangeStatus("Tidak Tersedia")}
-                      >
-                        Tidak Tersedia
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              )}
+            <div className="search-toolbar__filter">
+              <button type="button" className="search-toolbar__trigger" aria-expanded={openFilter === "status"} onClick={() => setOpenFilter(openFilter === "status" ? null : "status")}>{selectedStatus || "Status"}<ChevronDownIcon /></button>
+              {openFilter === "status" && <div className="search-toolbar__menu">
+                {["Tersedia", "Tidak Tersedia"].map((value) => <button type="button" key={value} aria-pressed={selectedStatus === value} onClick={() => changeFilter("status", value)}>{value}</button>)}
+              </div>}
             </div>
           )}
-
           {filterKategori && (
-            <div className="w-fit flex flex-col" ref={kategoriRef}>
-              <ButtonIcon
-                title="Kategori"
-                classNameBtn="border rounded px-2 py-1 hover:bg-slate-100"
-                onClick={toggleKategori} // Toggle kategori dropdown
-              />
-              {kategori && (
-                <div className="absolute mt-8 bg-orange-50 shadow text-sm">
-                  <ul>
-                    <li className="hover:bg-orange-100 w-full text-left">
-                      <button
-                        className="px-2 py-1"
-                        onClick={() => handleChangeKategori("SEPEDA")}
-                      >
-                        Sepeda
-                      </button>
-                    </li>
-                    <li className="hover:bg-orange-100 w-full text-left">
-                      <button
-                        className="px-2 py-1"
-                        onClick={() => handleChangeKategori("SPAREPART")}
-                      >
-                        Sparepart
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              )}
+            <div className="search-toolbar__filter">
+              <button type="button" className="search-toolbar__trigger" aria-expanded={openFilter === "kategori"} onClick={() => setOpenFilter(openFilter === "kategori" ? null : "kategori")}>{selectedKategori === "SEPEDA" ? "Sepeda" : selectedKategori === "SPAREPART" ? "Sparepart" : "Kategori"}<ChevronDownIcon /></button>
+              {openFilter === "kategori" && <div className="search-toolbar__menu">
+                {[["SEPEDA", "Sepeda"], ["SPAREPART", "Sparepart"]].map(([value, label]) => <button type="button" key={value} aria-pressed={selectedKategori === value} onClick={() => changeFilter("kategori", value)}>{label}</button>)}
+              </div>}
             </div>
           )}
-
           {sortedData && (
-            <div className="w-fit flex flex-col" ref={sortRef}>
-              <ButtonIcon
-                title="Urutkan"
-                classNameBtn="border rounded px-2 py-1 hover:bg-slate-100"
-                icon={<AdjustmentsHorizontalIcon className="size-5" />}
-                showArrow={false}
-                onClick={handleSortChange}
-                // onClick={toggleSortFilter}
-              />
-              {sortFilter && (
-                <div className="absolute mt-8 bg-orange-50 shadow text-sm">
-                  <ul>
-                    <li>
-                      <button
-                        className="px-2 py-1"
-                        onClick={() => handleChangeSortFilter("A-Z")}
-                      >
-                        A-Z
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        className="px-2 py-1"
-                        onClick={() => handleChangeSortFilter("Z-A")}
-                      >
-                        Z-A
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              )}
+            <div className="search-toolbar__filter">
+              <button type="button" className="search-toolbar__trigger" aria-expanded={openFilter === "sort"} onClick={() => setOpenFilter(openFilter === "sort" ? null : "sort")}><AdjustmentsHorizontalIcon />{sortDirection === "asc" ? "A–Z" : sortDirection === "desc" ? "Z–A" : "Urutkan"}<ChevronDownIcon /></button>
+              {openFilter === "sort" && <div className="search-toolbar__menu">
+                <button type="button" aria-pressed={sortDirection === "asc"} onClick={() => sort("asc")}>Nama A–Z</button>
+                <button type="button" aria-pressed={sortDirection === "desc"} onClick={() => sort("desc")}>Nama Z–A</button>
+              </div>}
             </div>
           )}
         </div>
-
-        {/* Dropdown for burger menu - Show on md and smaller screens */}
-        {isMenuOpen && (
-          <div className="md:hidden flex flex-col gap-2">
-            {filterStatus && (
-              <div className="w-fit flex flex-col" ref={statusRef}>
-                <ButtonIcon
-                  title="Status"
-                  classNameBtn="border rounded px-2 py-1"
-                  onClick={toggleStatus}
-                />
-                {status && (
-                  <div className="absolute mt-8 bg-orange-50 px-2 shadow text-sm">
-                    <ul>
-                      <li>
-                        <button
-                          className="px-2 py-1"
-                          onClick={() => handleChangeStatus("Tersedia")}
-                        >
-                          Tersedia
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          className="px-2 py-1"
-                          onClick={() => handleChangeStatus("Tidak Tersedia")}
-                        >
-                          Tidak Tersedia
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {filterKategori && (
-              <div className="w-fit flex flex-col" ref={kategoriRef}>
-                <ButtonIcon
-                  title="Kategori"
-                  classNameBtn="border rounded px-2 py-1"
-                  onClick={toggleKategori} // Toggle kategori dropdown
-                />
-                {kategori && (
-                  <div className="absolute mt-8 bg-orange-50 px-2 shadow text-sm">
-                    <ul>
-                      <li>
-                        <button
-                          className="px-2 py-1"
-                          onClick={() => handleChangeKategori("SEPEDA")}
-                        >
-                          Sepeda
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          className="px-2 py-1"
-                          onClick={() => handleChangeKategori("SPAREPART")}
-                        >
-                          Sparepart
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {sortedData && (
-              <div>
-                <ButtonIcon
-                  title="Urutkan"
-                  classNameBtn="border rounded px-2 py-1"
-                  icon={<AdjustmentsHorizontalIcon className="size-5" />}
-                  showArrow={false}
-                  // onClick={handleSortChange} // Toggle urutan
-                />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };

@@ -10,6 +10,8 @@ import {
   getAllCustomerTransactions,
 } from "../../../api/api";
 import { formatCurrency } from "../../../utils";
+import "../checkout.css";
+import { generateTransactionCode } from "../../../utils/receiptSettings";
 
 export const AddTransactionsGrosir = () => {
   const navigate = useNavigate();
@@ -180,13 +182,14 @@ export const AddTransactionsGrosir = () => {
           setLoading(false);
           window.open("/transaksi/pembayaran");
           navigate("/dashboard");
-          sessionStorage.clear();
         }, 2000);
       } else {
         setMessage("Transaksi gagal dibuat");
+        setLoading(false);
       }
     } catch (error) {
       setMessage(`Error: ${error.message}`);
+      setLoading(false);
     }
     // }
     // else if (!isOn) {
@@ -243,16 +246,8 @@ export const AddTransactionsGrosir = () => {
     }, 0);
   };
 
-  const generateTransactionCode = () => {
-    const date = new Date();
-    const randomNumber = Math.floor(Math.random() * 1000000);
-    return `GMJ-${date.getFullYear()}${
-      date.getMonth() + 1
-    }${date.getDate()}-${randomNumber}`;
-  };
-
   useEffect(() => {
-    setTransactionCode(generateTransactionCode);
+    setTransactionCode(generateTransactionCode());
   }, []);
 
   useEffect(() => {
@@ -276,7 +271,7 @@ export const AddTransactionsGrosir = () => {
   return (
     <div>
       <ContentLayout>
-        <div className="mb-12 pb-4">
+        <div className="checkout-form-page mb-12 pb-4">
           <div className="p-6 w-fit">
             <ButtonIcon
               icon={
@@ -285,14 +280,22 @@ export const AddTransactionsGrosir = () => {
               title="Kembali"
               titleColor="text-orange-600 font-semibold text-base max-md:text-xs"
               showArrow={false}
-              linkTo="/dashboard"
+              linkTo="/transaksi/grosir"
             />
           </div>
 
           <hr className="mx-3" />
-          <form action="" onSubmit={handleSubmit}>
-            <div className="mt-4 grid grid-cols-2 max-md:grid-cols-1 px-6 gap-8">
-              <div className="mx-2 w-full flex flex-col gap-10 pr-6 border-r-2">
+          <header className="checkout-form-intro">
+            <span>CHECKOUT GROSIR</span>
+            <h1>Selesaikan transaksi</h1>
+            <p>Periksa pelanggan, pembayaran, dan rincian pesanan sebelum menyimpan transaksi.</p>
+            <div className="checkout-form-steps" aria-label="Tahapan transaksi">
+              <span>1 <b>Pilih barang</b></span><span className="is-current">2 <b>Checkout</b></span><span>3 <b>Struk</b></span>
+            </div>
+          </header>
+          <form className="checkout-form" onSubmit={handleSubmit}>
+            <div className="checkout-form__grid mt-4 grid grid-cols-2 max-md:grid-cols-1 px-6 gap-8">
+              <div className="checkout-form__panel mx-2 w-full flex flex-col gap-10 pr-6 border-r-2">
                 <div className="w-full flex flex-col gap-6">
                   <h1 className="text-xl max-md:text-lg  font-bold">
                     Informasi Pelanggan
@@ -431,8 +434,9 @@ export const AddTransactionsGrosir = () => {
                   </div>
                 </div>
                 <div className="w-full flex flex-col gap-1">
-                  <label htmlFor="" className="text-base max-md:text-xs font-bold">Note</label>
+                  <label htmlFor="checkout-grosir-note" className="text-base max-md:text-xs font-bold">Catatan</label>
                   <input
+                    id="checkout-grosir-note"
                     type="text"
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
@@ -546,21 +550,17 @@ export const AddTransactionsGrosir = () => {
                 </div>
               </div>
 
-              <div className="mx-2 w-full flex flex-col gap-8">
-                <h1 className="text-xl max-md:text-lg font-bold">
-                  Rincian Pesanan
-                </h1>
+              <div className="checkout-form__panel checkout-form__order mx-2 w-full flex flex-col gap-8">
+                <div className="checkout-form__order-heading"><div><span>RINGKASAN PESANAN</span><h1>Rincian pesanan</h1></div><small>{addedItems.reduce((sum, item) => sum + item.quantity, 0)} barang</small></div>
                 <div className="">
                   <div className="w-fullm max-md:text-[10px] flex items-center justify-start gap-4">
                     <div className="w-full">
                       <ul>
                         {addedItems?.length > 0 ? (
                           addedItems.map((item, index) => (
-                            <li key={index}>
+                            <li key={index} className="checkout-form__line-item">
                               <div className="w-full flex items-center justify-between">
-                                <p className="">
-                                  {`(x${item.quantity})`} {item.name}
-                                </p>
+                                <p><span className="checkout-form__quantity">x{item.quantity}</span> {item.name}</p>
                                 <div className="w-fit flex gap-1">
                                   {/* {formatCurrency(
                                     item.price_grosir * item.quantity
@@ -579,7 +579,7 @@ export const AddTransactionsGrosir = () => {
                             </li>
                           ))
                         ) : (
-                          <p>No items added</p>
+                          <p>Belum ada barang dalam pesanan.</p>
                         )}
                       </ul>
                     </div>
@@ -588,22 +588,20 @@ export const AddTransactionsGrosir = () => {
 
                 <div className="w-full text-sm max-md:text-xs">
                   <div className="w-full flex justify-between">
-                    <p className="font-normal text-[#334155]">SubTotal</p>
+                    <p className="font-normal text-[#334155]">Subtotal</p>
                     <h1 className="font-semibold text-[#1E293B]">
                       {formatCurrency(calculateTotal())}
                     </h1>
                   </div>
                   <div className="w-full flex justify-between">
-                    <p className="font-normal text-[#334155]">
-                      Diskon {formatCurrency(discount)}
-                    </p>
+                    <p className="font-normal text-[#334155]">Diskon</p>
                     <h1 className="font-semibold text-[#1E293B]">
-                      {formatCurrency(discount)}
+                      - {formatCurrency(discount)}
                     </h1>
                   </div>
 
                   <hr className="mt-4" />
-                  <div className="w-full flex justify-between text-lg max-md:text-sm font-semibold">
+                  <div className="checkout-form__total w-full flex justify-between text-lg max-md:text-sm font-semibold">
                     <p>Total</p>
                     <h1>{formatCurrency(calculateTotal() - discount)}</h1>{" "}
                   </div>
@@ -615,10 +613,11 @@ export const AddTransactionsGrosir = () => {
                     className={`w-full rounded-full bg-orange-600 py-4 px-10 font-semibold text-base max-md:text-xs text-white ${
                       loading ? "cursor-not-allowed opacity-50" : ""
                     }`}
-                    disabled={loading}
+                    disabled={loading || addedItems.length === 0}
                   >
-                    {loading ? "Memproses..." : "Cetak Struk"}
+                    {loading ? "Memproses..." : "Simpan transaksi & lihat struk"}
                   </button>
+                  {message && <p className="checkout-form__message" role="status">{message}</p>}
                   {/* </Link> */}
                 </div>
               </div>

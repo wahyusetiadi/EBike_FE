@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from "react";
-import Logo2 from "../../../assets/logo2.svg";
 import Logo from "../../../assets/logo.svg";
-import Cookies from "js-cookie";
 
 import {
   ArchiveBoxIcon,
   ChartBarIcon,
-  Cog6ToothIcon,
   ReceiptPercentIcon,
   ShoppingBagIcon,
   Squares2X2Icon,
@@ -20,15 +17,10 @@ import { getUser } from "../../../api/api";
 
 export const SideBar = ({ users, role, loggedInfo = false }) => {
   const [openDropdown, setOpenDropdown] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState(null);
 
   const toggleDropdown = () => {
     setOpenDropdown(!openDropdown);
-  };
-
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen); // Toggle the burger menu
   };
 
   const navigate = useNavigate();
@@ -57,8 +49,8 @@ export const SideBar = ({ users, role, loggedInfo = false }) => {
   const isAdminCabang = user?.role === "admin";
 
   return (
-    <div className="xl:w-[276px] lg:w-[200px] fixed lg:static h-screen bg-white text-slate-400 p-6 text-lg overflow-y-auto no-scrollbar">
-      <div className="sticky top-0 left-0 bg-white hidden md:block">
+    <div className="sidebar-shell no-scrollbar">
+      <div className="sidebar-brand">
         {/* Logo for large screens, switches between Logo2 and Logo based on isOpen */}
         {/* <img
           src={isOpen ? Logo : Logo2}
@@ -67,7 +59,7 @@ export const SideBar = ({ users, role, loggedInfo = false }) => {
         /> */}
         <button
           className="w-auto flex gap-2 items-center justify-center py-2"
-          onClick={toggleSidebar}
+          onClick={() => navigate("/dashboard")}
         >
           <img src={Logo} alt="" className="size-8" />
           <p className="text-orange-500 font-bold text-3xl hidden lg:block">
@@ -112,11 +104,7 @@ export const SideBar = ({ users, role, loggedInfo = false }) => {
           <p className="text-sm font-medium">({role})</p>
         </div>
       )}
-      <div
-        className={`${
-          isOpen ? "block" : "hidden"
-        } lg:block w-full flex flex-col 2xl:gap-12 xl:gap-6`}
-      >
+      <div className="sidebar-menu">
         <div className="">
           <h1 className="text-base mb-4">Menu</h1>
           <div className="flex flex-col gap-4">

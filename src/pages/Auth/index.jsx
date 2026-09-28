@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../../api/api";
 import logo from "../../assets/logo.svg";
+import "./style.css";
 
 const shouldShowDemoAccount = () => {
   const demoFlag = import.meta.env.VITE_SHOW_DEMO_CREDENTIALS;
@@ -12,8 +13,7 @@ const shouldShowDemoAccount = () => {
   if (flag === "true") return true;
   if (flag === "false") return false;
 
-  const baseUrl = import.meta.env.VITE_BASE_URL;
-  return !baseUrl;
+  return !import.meta.env.VITE_BASE_URL;
 };
 
 const DEMO_ACCOUNTS = [
@@ -26,7 +26,7 @@ export const Auth = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const doLogin = async (u, p) => {
@@ -35,17 +35,12 @@ export const Auth = () => {
 
     try {
       const response = await loginUser(u, p);
-
-      if (response && response.data) {
+      if (response?.data) {
         localStorage.setItem("token", response.data);
         navigate("/dashboard");
       }
     } catch (err) {
-      if (err?.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Username atau password salah");
-      }
+      setError(err?.response?.data?.message || "Username atau password salah");
     } finally {
       setLoading(false);
     }
@@ -56,115 +51,130 @@ export const Auth = () => {
     await doLogin(username, password);
   };
 
-  const handleDemoLogin = async (account) => {
+  const selectDemoAccount = (account) => {
     setUsername(account.username);
     setPassword(account.password);
-    await doLogin(account.username, account.password);
-  };
-
-  const handleUseDemo = (account) => {
-    setUsername(account.username);
-    setPassword(account.password);
+    setError(null);
   };
 
   return (
-    <div className="w-full h-dvh bg-[url('/authBg.jpg')] bg-cover bg-center bg-no-repeat flex items-center justify-center">
-      {/* <div className="w-[40%] bg-cyan-600 h-dvh">
-        <img src={ImageSide} />
-      </div> */}
+    <main className="auth-page">
+      <section className="auth-shell" aria-label="Login E-Bike Management">
+        <aside className="auth-brand-panel">
+          <div className="auth-brand-top">
+            <div className="auth-brand-logo">
+              <img src={logo} alt="" />
+            </div>
+            <div>
+              <p className="auth-brand-name">E-Bike</p>
+              <p className="auth-brand-caption">MANAGEMENT</p>
+            </div>
+          </div>
 
-      <div className="md:w-[600px] max-md:w-[300px] py-20 max-md:py-8 max-md:px-4 border bg-slate-100 rounded-lg flex flex-col items-center justify-center">
-        <div className="mb-6 w-full flex gap-4 items-center justify-center">
-          <img src={logo} className="w-32 max-md:w-40" />
-          <div className="w-fit flex flex-col items-start justify-stretch text-start text-5xl font-bold text-orange-500">
-            <p>E-Bike</p>
-            <p>Management</p>
+          <div className="auth-brand-copy">
+            <span className="auth-eyebrow"><span /> PLATFORM MANAJEMEN TOKO</span>
+            <h1>Semua operasional, <em>lebih mudah.</em></h1>
+            <p>Kelola produk, transaksi, dan pelanggan dalam satu tempat yang praktis.</p>
+          </div>
+
+          <div className="auth-brand-footer">
+            <span className="auth-status-dot" /> Sistem manajemen E-Bike
+          </div>
+          <div className="auth-brand-orbit auth-brand-orbit-one" />
+          <div className="auth-brand-orbit auth-brand-orbit-two" />
+        </aside>
+
+        <div className="auth-form-panel">
+          <div className="auth-form-wrap">
+            <div className="auth-mobile-brand">
+              <img src={logo} alt="" />
+              <span>E-Bike <b>Management</b></span>
+            </div>
+
+            <header className="auth-heading">
+              <p className="auth-heading-kicker">SELAMAT DATANG KEMBALI</p>
+              <h2>Masuk ke akun Anda</h2>
+              <p>Masukkan detail akun untuk melanjutkan.</p>
+            </header>
+
+            <form className="auth-form" onSubmit={handleSubmit}>
+              <div className="auth-field">
+                <label htmlFor="username">Username</label>
+                <div className="auth-input-wrap">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="8" r="4" /></svg>
+                  <input
+                    id="username"
+                    name="username"
+                    autoComplete="username"
+                    required
+                    type="text"
+                    placeholder="Masukkan username"
+                    value={username}
+                    onChange={(event) => setUsername(event.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="auth-field">
+                <label htmlFor="password">Password</label>
+                <div className="auth-input-wrap">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 1 1 8 0v3M12 14v3" /></svg>
+                  <input
+                    id="password"
+                    name="password"
+                    autoComplete="current-password"
+                    required
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Masukkan password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                  />
+                  <button
+                    className="auth-password-toggle"
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                  >
+                    {showPassword ? "Sembunyikan" : "Tampilkan"}
+                  </button>
+                </div>
+              </div>
+
+              {error && <p className="auth-error" role="alert">{error}</p>}
+
+              <button className="auth-submit" type="submit" disabled={loading}>
+                <span>{loading ? "Memproses..." : "Masuk"}</span>
+                {!loading && <span className="auth-submit-arrow" aria-hidden="true">→</span>}
+              </button>
+            </form>
+
+            {shouldShowDemoAccount() && (
+              <div className="auth-demo">
+                <p className="auth-demo-title">Akun demo <span>• pilih untuk isi otomatis</span></p>
+                <div className="auth-demo-list">
+                  {DEMO_ACCOUNTS.map((account) => (
+                    <button
+                      key={account.username}
+                      type="button"
+                      className="auth-demo-account"
+                      onClick={() => selectDemoAccount(account)}
+                    >
+                      <span className="auth-demo-avatar">{account.label.charAt(0)}</span>
+                      <span className="auth-demo-details">
+                        <b>{account.label}</b>
+                        <small>{account.username} / {account.password}</small>
+                      </span>
+                      <span className="auth-demo-arrow" aria-hidden="true">↗</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <p className="auth-form-footer">© {new Date().getFullYear()} E-Bike Management</p>
           </div>
         </div>
-        <form action="" onSubmit={handleSubmit}>
-          <div className="text-center w-full">
-            <h1 className="font-bold text-2xl max-md:text-lg">
-              Masuk ke Akun Anda
-            </h1>
-            <p className="text-gray-600 text-base max-md:text-sm">
-              Masukkan Username dan Password untuk login!
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2 mt-6 text-base max-md:text-sm">
-            <label htmlFor="username" className="font-semibold">
-              Username
-            </label>
-            <input
-              required
-              type="text"
-              placeholder="Masukkan Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="p-2 border-2 rounded"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2 mt-4 text-base max-md:text-sm">
-            <label htmlFor="password" className="font-semibold">
-              Password
-            </label>
-            <input
-              required
-              type="password"
-              placeholder="Masukkan Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="p-2 border-2 rounded"
-            />
-          </div>
-
-          {/* <div className="w-full flex justify-end text-xs mt-1">
-            <a href="">Lupa Passord?</a>
-          </div> */}
-
-          {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
-
-          {shouldShowDemoAccount() && (
-            <div className="mt-6 mb-4 p-3 rounded border border-orange-200 bg-orange-50 text-sm">
-              <p className="font-semibold text-orange-700">Akun demo</p>
-
-              <div className="mt-3 grid gap-2">
-                {DEMO_ACCOUNTS.map((acc) => (
-                  <div
-                    key={acc.username}
-                    className="flex items-center justify-between gap-2 rounded bg-white/60 px-3 py-2 border border-orange-100"
-                  >
-                    <div className="leading-tight">
-                      <p className="text-xs font-semibold text-orange-800">
-                        {acc.label}
-                      </p>
-                      <p className="text-[11px] text-orange-800/80">{`${acc.username} / ${acc.password}`}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="w-full flex justify-center text-base max-md:text-sm text-white mt-8">
-            <button
-              type="submit"
-              disabled={loading}
-              className="p-2 w-full bg-orange-600 hover:bg-orange-700 rounded-full"
-            >
-              {loading ? "Loading..." : "Login"}
-            </button>
-          </div>
-
-          {/* <div className="w-full flex justify-center text-base mt-2">
-            <p>Belum Punya Akun?</p>
-            <a href="" className="font-bold">
-              Hubungi Admin
-            </a>
-          </div> */}
-        </form>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };

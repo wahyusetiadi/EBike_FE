@@ -1,0 +1,12 @@
+.search-toolbar { display:flex; align-items:center; gap:12px; margin:18px 0; width:100%; }
+.search-toolbar > :first-child { min-width:220px; flex:1; }
+.search-toolbar__filters { display:flex; flex-wrap:wrap; gap:8px; }
+.search-toolbar__filter { position:relative; }
+.search-toolbar__trigger { min-height:44px; display:flex; align-items:center; justify-content:center; gap:8px; padding:0 14px; border:1px solid #dce5e1; border-radius:12px; background:#fff; color:#23413b; font-size:13px; font-weight:650; white-space:nowrap; transition:background .2s,border-color .2s; }
+.search-toolbar__trigger:hover,.search-toolbar__trigger[aria-expanded="true"] { background:#f3f8f5; border-color:#87ac9c; }
+.search-toolbar__trigger svg { width:16px; height:16px; }
+.search-toolbar__trigger svg:last-child { width:14px; height:14px; }
+.search-toolbar__menu { position:absolute; z-index:40; right:0; top:calc(100% + 6px); min-width:172px; padding:5px; background:#fff; border:1px solid #e2eae5; border-radius:12px; box-shadow:0 12px 32px #163d2a21; }
+.search-toolbar__menu button { display:block; width:100%; padding:10px 12px; text-align:left; border-radius:8px; color:#23413b; font-size:13px; }
+.search-toolbar__menu button:hover,.search-toolbar__menu button[aria-pressed="true"] { background:#eaf4ee; }
+@media (max-width:760px) { .search-toolbar { flex-direction:column; align-items:stretch; } .search-toolbar > :first-child { min-width:0; } .search-toolbar__filters { width:100%; } .search-toolbar__trigger { min-height:40px; padding:0 11px; } .search-toolbar__menu { right:auto; left:0; } }

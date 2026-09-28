@@ -1,111 +1,108 @@
-import React, { useState } from "react";
+import { useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  ArrowLeftIcon,
+  ArrowUpTrayIcon,
+  CheckCircleIcon,
+  DocumentArrowUpIcon,
+  DocumentTextIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { ContentLayout } from "../../components/organisms/ContentLayout";
-import { ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import { uploadFile } from "../../api/api";
+import "./style.css";
 
 export const UploadData = () => {
-  const [fileName, setFileName] = useState("");
-  const [uploadStatus, setUploadStatus] = useState("");
+  const [file, setFile] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [status, setStatus] = useState({ type: "", message: "" });
+  const fileInputRef = useRef(null);
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setFileName(file.name);
-      uploadFileHandler(file);
+  const chooseFile = (candidate) => {
+    if (!candidate) return;
+    if (!candidate.name.toLowerCase().endsWith(".xlsx")) {
+      setFile(null);
+      setStatus({ type: "error", message: "Pilih file Excel dengan format .xlsx." });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
     }
+    setFile(candidate);
+    setStatus({ type: "", message: "" });
   };
 
   const handleDrop = (event) => {
     event.preventDefault();
-    const file = event.dataTransfer.files[0];
-    if (file) {
-      setFileName(file.name);
-      uploadFileHandler(file);
-    }
+    setDragging(false);
+    if (!uploading) chooseFile(event.dataTransfer.files[0]);
   };
 
-  const handleDragOver = (event) => {
-    event.preventDefault();
+  const clearFile = () => {
+    setFile(null);
+    setStatus({ type: "", message: "" });
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const uploadFileHandler = async (file) => {
+  const handleUpload = async () => {
+    if (!file || uploading || status.type === "success") return;
+    setUploading(true);
+    setStatus({ type: "", message: "" });
     const formData = new FormData();
     formData.append("file", file);
-
     try {
-      setUploadStatus("Uploading...");
-
       const response = await uploadFile(formData);
-
-      if (response.status === 200) {
-        setUploadStatus(`Upload Successful: ${response.data.message}`);
+      if (response?.status === 200 || response?.status === 201) {
+        setStatus({ type: "success", message: response?.data?.message || "Barang berhasil diimpor. Buka daftar barang untuk melihat hasilnya." });
       } else {
-        setUploadStatus(`Upload Failed.`);
+        setStatus({ type: "error", message: response?.data?.message || "File belum berhasil diimpor. Periksa isi file dan coba lagi." });
       }
     } catch (error) {
-      setUploadStatus(`Upload Failed: ${error.message}`);
+      setStatus({ type: "error", message: error?.response?.data?.message || error.message || "Impor gagal. Silakan coba lagi." });
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
-    <div>
-      <ContentLayout>
-        <div className="w-full flex flex-col gap-12 px-6 py-4">
-          <div className="w-full text-nowrap max-md:text-wrap">
-            <h1 className="text-2xl max-md:text-lg font-bold">Upload Data</h1>
-            <p className="text-sm max-md:text-xs text-slate-700">
-              Upload data dari excel kamu untuk menambahkan data ke list barang
-              sesuai format!
-            </p>
-            <hr className="mt-4" />
-          </div>
-          <div className="w-full flex flex-col items-center justify-center">
+    <ContentLayout>
+      <main className="import-page">
+        <Link to="/barang" className="import-back"><ArrowLeftIcon /> Kembali ke daftar barang</Link>
+        <header className="import-header">
+          <span><DocumentArrowUpIcon /> KATALOG BARANG</span>
+          <h1>Impor data barang</h1>
+          <p>Tambahkan banyak barang sekaligus dari file Excel. Pilih file, periksa namanya, lalu mulai impor.</p>
+        </header>
+
+        <div className="import-grid">
+          <section className="import-card" aria-labelledby="import-card-title">
+            <div className="import-card__heading"><span>01</span><div><h2 id="import-card-title">Pilih file Excel</h2><p>Format yang diterima: .xlsx</p></div></div>
             <div
-              className="w-fit border-2 border-dotted p-6 flex justify-center items-center cursor-pointer"
-              onDrop={handleDrop} // Handling drag-and-drop
-              onDragOver={handleDragOver} // Prevent default behavior on drag over
+              className={`import-dropzone${dragging ? " is-dragging" : ""}`}
+              onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
+              onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false); }}
+              onDrop={handleDrop}
             >
-              <input
-                type="file"
-                accept=".xlsx"
-                onChange={handleFileChange} // Handling file select
-                className="hidden"
-                id="upload-input"
-              />
-              <label
-                htmlFor="upload-input"
-                className="flex flex-col items-center text-center"
-              >
-                <ArrowUpTrayIcon className="text-gray-500 w-12 h-12" />
-                <span className="text-sm text-gray-500 mt-2">
-                  Upload file Excel (.xlsx)
-                </span>
-              </label>
+              <input ref={fileInputRef} id="import-file" type="file" accept=".xlsx" onChange={(event) => chooseFile(event.target.files[0])} disabled={uploading} />
+              <ArrowUpTrayIcon />
+              <strong>Tarik file Excel ke sini</strong>
+              <span>atau pilih dari perangkat Anda</span>
+              <label htmlFor="import-file">Pilih file</label>
             </div>
 
-            {/* Tombol untuk membuka file input */}
-            <button
-              className="mt-4 px-2 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-md"
-              onClick={() => document.getElementById("upload-input").click()}
-            >
-              Open File Explorer
-            </button>
+            {file && (
+              <div className="import-selected"><DocumentTextIcon /><div><strong>{file.name}</strong><span>{(file.size / 1024).toLocaleString("id-ID", { maximumFractionDigits: 0 })} KB · Siap diimpor</span></div><button type="button" aria-label="Hapus file yang dipilih" onClick={clearFile} disabled={uploading}><XMarkIcon /></button></div>
+            )}
+            {status.message && <p className={`import-status import-status--${status.type}`} role={status.type === "error" ? "alert" : "status"}>{status.type === "success" && <CheckCircleIcon />}{status.message}</p>}
+            <div className="import-actions"><button type="button" onClick={handleUpload} disabled={!file || uploading || status.type === "success"}>{uploading ? "Mengimpor..." : status.type === "success" ? "Impor selesai" : "Mulai impor barang"}</button></div>
+          </section>
 
-            {fileName && (
-              <div className="mt-4 text-sm text-gray-700">
-                <strong>Uploaded File: </strong>
-                {fileName}
-              </div>
-            )}
-            {uploadStatus && (
-              <div className="mt-4 text-sm text-gray-700">
-                <strong>Status: </strong>
-                {uploadStatus}
-              </div>
-            )}
-          </div>
+          <aside className="import-help">
+            <h2>Sebelum mengimpor</h2>
+            <ol><li><span>1</span>Siapkan data barang dalam file Excel (.xlsx).</li><li><span>2</span>Pastikan nama barang dan harga terisi sesuai format data Anda.</li><li><span>3</span>Periksa nama file sebelum menekan “Mulai impor barang”.</li></ol>
+            <p>Setelah berhasil, hasil impor dapat dilihat pada menu Barang.</p>
+          </aside>
         </div>
-      </ContentLayout>
-    </div>
+      </main>
+    </ContentLayout>
   );
 };

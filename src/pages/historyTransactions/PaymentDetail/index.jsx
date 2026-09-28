@@ -3,8 +3,12 @@ import { useNavigate } from "react-router-dom";
 import "./style.css";
 import { getUser } from "../../../api/api";
 import { formatCurrency } from "../../../utils";
+import "../../Transactions/receipt.css";
+import { getReceiptSettings } from "../../../utils/receiptSettings";
+import { ReceiptFooter, ReceiptHeader } from "../../../components/organisms/ReceiptSections";
 
 const PaymentPage = () => {
+  const receiptSettings = getReceiptSettings();
   const [transactionData, setTransactionData] = useState(null);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
@@ -69,24 +73,19 @@ const PaymentPage = () => {
     printWindow.document.write(`
       <html>
         <head>
-          <title>Struk Pembelian</title>
+          <title>Struk</title>
           <style>
-            body {
-              font-family: 'Courier New', monospace;
-              padding: 10px;
-              font-size: 12px;
-              color: #333;
-            }
+            @page { margin: 7mm; }
+            body { font-family: 'Courier New', monospace; width: 80mm; margin: 0 auto; padding: 0; font-size: 12px; line-height: 1.5; color: #111; }
+            hr { border: 0; border-top: 1px dashed #999; margin: 10px 0; }
+            h1, p { margin: 0 0 4px; }
             .text-center {
               text-align: center;
             }
             .text-start {
               text-align: left;
             }
-            .flex {
-              display: flex;
-              justify-content: space-between;
-            }
+            .flex { display: flex; justify-content: space-between; gap: 8px; }
             .gap-2 {
               gap: 8px;
             }
@@ -112,25 +111,24 @@ const PaymentPage = () => {
     `);
 
     printWindow.document.close(); // Penting untuk menyelesaikan proses dokumen
+    printWindow.document.title = receiptSettings.receiptTitle;
+    printWindow.focus();
     printWindow.print(); // Melakukan print
   };
 
   return (
-    <div className="w-full h-screen flex flex-col text-center items-center justify-center">
+    <div className="receipt-page">
+      <div className="receipt-page__intro"><h1>Struk transaksi</h1><p>Periksa rincian sebelum mencetak.</p></div>
       <div
-        className="w-[375px] h-auto bg-white rounded-lg p-4 text-xs font-mono border border-gray-300"
+        className="receipt-card"
         id="print-content"
       >
         {/* Header struk */}
-        <div className="text-center">
-          <h1 className="font-bold">E-Bike Management</h1>
-          <p>Jl. Veteran No. 123</p>
-          <p>Telp: 0812-3456-7890</p>
-        </div>
+        <ReceiptHeader settings={receiptSettings} />
         <hr className="my-2" />
         <div className="mt-2 text-sm">
           <div className="text-center">
-            <p className="font-semibold">Struk Pembelian</p>
+            <p className="font-semibold">{receiptSettings.receiptTitle}</p>
             <p>
               ID Transaksi: <br /> {transactionCode}
             </p>
@@ -194,19 +192,12 @@ const PaymentPage = () => {
         </div>
         <hr className="my-2" />
 
-        <div className="text-center text-xs text-gray-600">
-          <p>
-            Terima kasih telah berbelanja di <br /> E-Bike Management
-          </p>
-          <p>www.ebikemanagement.com</p>
-          <p>Pastikan untuk menyimpan struk ini sebagai bukti transaksi.</p>
-          {/* <p>Admin {userData.username}</p> */}
-        </div>
+        <ReceiptFooter settings={receiptSettings} />
       </div>
-      <div className="print-button-container mt-4 text-white text-sm">
+      <div className="receipt-actions print-button-container">
         <button
           onClick={handlePrint}
-          className="print-button px-4 py-2 bg-orange-600 rounded-full"
+          className="print-button"
         >
           Cetak Struk
         </button>

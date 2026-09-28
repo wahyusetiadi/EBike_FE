@@ -21,6 +21,8 @@ import {
   toTitleCaseWithSpace,
 } from "../../../utils";
 import { ModalCustomerEdit } from "../ModalCustomerEdit";
+import { StatusBadge } from "../../molecules/StatusBadge";
+import "./style.css";
 
 export const TableData = ({
   data,
@@ -42,6 +44,7 @@ export const TableData = ({
   onDelete = () => {},
   onDetail = () => {},
   onAdd = () => {},
+  selectedQuantities,
   onRecovery = () => {},
   onSubmitEdit,
   onUpdate,
@@ -64,7 +67,9 @@ export const TableData = ({
   const [itemQuantities, setItemQuantities] = useState({});
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedKategori, setSelectedKategori] = useState("");
+  const [sortOrder, setSortOrder] = useState("");
   const [user, setUser] = useState(null);
+  const getDisplayedQuantity = (item) => (selectedQuantities ? selectedQuantities[item.id] : itemQuantities[item.id]) || 0;
   const [selectedItem, setSelectedItem] = useState({
     id: "",
     name: "",
@@ -94,8 +99,11 @@ export const TableData = ({
   // };
 
   const handleAddClick = (item) => {
+    const currentQuantity = selectedQuantities
+      ? (selectedQuantities[item.id] || 0)
+      : (itemQuantities[item.id] || 0);
+    const newQuantity = currentQuantity + 1;
     setItemQuantities((prev) => {
-      const newQuantity = prev[item.id] ? prev[item.id] + 1 : 0; // Jika item sudah ada, tambahkan 1, jika belum, mulai dari 1
       return {
         ...prev,
         [item.id]: newQuantity,
@@ -103,7 +111,7 @@ export const TableData = ({
     });
     onAdd({
       ...item,
-      quantity: itemQuantities[item.id] ? itemQuantities[item.id] + 1 : 1,
+      quantity: newQuantity,
     });
   };
 
@@ -173,17 +181,7 @@ export const TableData = ({
   };
 
   const handleSortChange = (order) => {
-    const sorted = [...filteredData].sort((a, b) => {
-      const keyA = a.name || a.date;
-      const keyB = b.name || b.date;
-      if (keyA instanceof Date && keyB instanceof Date) {
-        const comparison = keyA - keyB;
-        return order === "asc" ? comparison : -comparison;
-      }
-      const comparison = String(keyA).localeCompare(String(keyB));
-      return order === "asc" ? comparison : -comparison;
-    });
-    setFilteredData(sorted);
+    setSortOrder(order);
   };
 
   const fetchUser = async () => {
@@ -211,18 +209,27 @@ export const TableData = ({
         const name = item.name ? item.name.toLowerCase() : "";
         const type = item.type ? item.type.toLowerCase() : "";
         const customer = item.customer ? item.customer.toLowerCase() : "";
+        const productCode = item.productCode ? String(item.productCode).toLowerCase() : "";
 
         return (
           name.includes(searchQuery.toLowerCase()) ||
           type.includes(searchQuery.toLowerCase()) ||
-          customer.includes(searchQuery.toLowerCase())
+          customer.includes(searchQuery.toLowerCase()) ||
+          productCode.includes(searchQuery.toLowerCase())
         );
+      });
+    }
+
+    if (sortOrder) {
+      filtered.sort((a, b) => {
+        const comparison = String(a.name || a.date || "").localeCompare(String(b.name || b.date || ""), "id");
+        return sortOrder === "asc" ? comparison : -comparison;
       });
     }
 
     fetchUser();
     setFilteredData(filtered);
-  }, [selectedStatus, selectedKategori, searchQuery, data]);
+  }, [selectedStatus, selectedKategori, searchQuery, sortOrder, data]);
 
   const isAdminBesar = user?.role === "owner";
   const isAdminCabang = user?.role === "admin";
@@ -347,14 +354,12 @@ export const TableData = ({
           />
         </div>
       )}
-      <div className="mt-4 rounded-lg overflow-x-auto">
+      <p className="table-data-scroll-hint">Geser tabel ke samping untuk melihat kolom lainnya →</p>
+      <div className="table-data-scroll mt-4">
         <table
-          border="1"
-          cellPadding="8"
-          cellSpacing="0"
-          className="min-w-full bg-white border border-gray-200 rounded-lg shadow-lg"
+          className="table-data-grid"
         >
-          <thead className="bg-orange-50 text-black text-sm max-md:text-xs font-bold rounded">
+          <thead>
             <tr>
               {columns.map((col) => (
                 <th key={col} className="px-6 py-4 text-left">
@@ -391,10 +396,10 @@ export const TableData = ({
             </tr>
           </thead>
 
-          <tbody className="text-black text-xs max-md:text-[10px]" key={""}>
+          <tbody>
             {currentItems.length > 0 ? (
               currentItems.map((item, index) => (
-                <tr key={item.id || index} className="border-b">
+                <tr key={item.id || index}>
                   {showId && (
                     <td className="py-2 px-6 text-left border">
                       {index + 1 + (currentPage - 1) * itemsPerPage}
@@ -422,18 +427,8 @@ export const TableData = ({
                     }
                     if (col === "lunas") {
                       return (
-                        <td key={col} className="">
-                          <div className="font-semibold">
-                            {item.lunas === 1 ? (
-                              <span className="text-white px-2 py-1 bg-green-600 rounded-full">
-                                Lunas
-                              </span>
-                            ) : (
-                              <span className="text-white px-2 py-1 bg-red-600 rounded-full">
-                                Belum
-                              </span>
-                            )}
-                          </div>
+                        <td key={col}>
+                          <StatusBadge label={item.lunas === 1 ? "Lunas" : "Belum lunas"} />
                         </td>
                       );
                     }
@@ -441,9 +436,9 @@ export const TableData = ({
                       return (
                         <td
                           key={col}
-                          className="py-2 px-6 font-semibold flex justify-center items-center"
+                          className="table-actions-cell"
                         >
-                          <div className="flex flex-col justify-center gap-2 items-center">
+                          <div className="table-actions">
                             {showEditBtn && (
                               <>
                                 <button
@@ -453,7 +448,7 @@ export const TableData = ({
                                     );
                                     handleEditClick(item);
                                   }}
-                                  className="w-full max-md:w-fit px-2 py-1 text-xs font-semibold bg-orange-100 text-orange-600 rounded flex gap-2 items-center justify-center"
+                                  className="table-action-button table-action-button--edit"
                                 >
                                   <PencilSquareIcon className="size-3 hidden md:block" />{" "}
                                   <span className="hidden md:block">Edit</span>{" "}
@@ -508,15 +503,15 @@ export const TableData = ({
                                     );
                                     handleEditCustomerClick(item);
                                   }}
-                                  className="w-full max-md:w-fit px-2 py-1 text-xs font-semibold bg-orange-100 text-orange-600 rounded flex gap-2 items-center justify-center"
+                                  className="table-action-button table-action-button--edit"
                                 >
                                   <PencilSquareIcon className="size-3 hidden md:block" />{" "}
                                   <span className="hidden md:block">Edit</span>{" "}
                                   <PencilSquareIcon className="size-3 md:hidden" />{" "}
                                 </button>
                                 {isEditCustomerOpen && isAdminBesar && (
-                                  <div className="w-full fixed inset-0 flex items-center justify-center">
-                                    <div className="w-full h-dvh bg-black absolute opacity-10"></div>
+                                  <div className="table-data-modal-layer">
+                                    <div className="table-data-modal-backdrop"></div>
                                     <ModalCustomerEdit
                                       id={selcetedCustomer.id}
                                       name={selcetedCustomer.name}
@@ -541,7 +536,7 @@ export const TableData = ({
                                     );
                                     openDeleteModal(item);
                                   }}
-                                  className="w-full max-md:w-fit px-2 py-1 font-semibold text-xs bg-red-100 text-red-600 rounded flex gap-2 items-center justify-center"
+                                  className="table-action-button table-action-button--danger"
                                 >
                                   <TrashIcon className="size-3 hidden md:block" />
                                   <span className="hidden md:block">Hapus</span>{" "}
@@ -556,7 +551,7 @@ export const TableData = ({
                                   );
                                   openDeleteCustomerModal(item);
                                 }}
-                                className="w-full max-md:w-fit px-2 py-1 font-semibold text-xs bg-red-100 text-red-600 rounded flex gap-2 items-center justify-center"
+                                className="table-action-button table-action-button--danger"
                               >
                                 <TrashIcon className="size-3 hidden md:block" />
                                 <span className="hidden md:block">
@@ -573,7 +568,7 @@ export const TableData = ({
                                   );
                                   openRecoveryModal(item);
                                 }}
-                                className="w-full max-md:w-fit px-2 py-1 font-semibold text-xs bg-green-100 text-green-600 rounded flex gap-2 items-center justify-center"
+                                className="table-action-button table-action-button--success"
                               >
                                 <ArrowPathIcon className="size-3 hidden md:block" />
                                 <span className="hidden md:block">
@@ -590,7 +585,7 @@ export const TableData = ({
                                   );
                                   onDetail(item.id);
                                 }}
-                                className="w-full px-2 py-1 font-semibold text-xs bg-blue-100 text-blue-600 rounded flex gap-2 items-center justify-center"
+                                className="table-action-button table-action-button--detail"
                               >
                                 <EyeIcon className="size-3 hidden md:block" />
                                 <span className="hidden md:block">
@@ -607,7 +602,7 @@ export const TableData = ({
                                   );
                                   openDeleteModal(item);
                                 }}
-                                className="w-full max-md:w-fit px-2 py-1 font-semibold text-xs bg-red-100 text-red-600 rounded flex gap-2 items-center justify-center"
+                                className="table-action-button table-action-button--danger"
                               >
                                 <TrashIcon className="size-3 hidden md:block" />
                                 <span className="hidden md:block">
@@ -621,7 +616,7 @@ export const TableData = ({
                               <>
                                 <button
                                   onClick={() => handleAddClick(item)}
-                                  className={`w-fit px-5 py-2 font-semibold text-white text-xs rounded-full flex gap-2 items-center justify-center ${
+                                  className={`table-action-button table-action-button--add ${
                                     item.isDeleted === 1 ||
                                     item.status === "Tidak Tersedia"
                                       ? "bg-slate-400 cursor-not-allowed"
@@ -633,7 +628,7 @@ export const TableData = ({
                                   }
                                 >
                                   <PlusIcon className="size-3" />
-                                  Tambah
+                                  {getDisplayedQuantity(item) ? `Tambah · ${getDisplayedQuantity(item)}` : "Tambah"}
                                 </button>
                                 {/* {!itemQuantities[item.id] ? (
                                   <button
@@ -711,29 +706,8 @@ export const TableData = ({
                     }
                     if (col === "status") {
                       return (
-                        <td
-                          key={col}
-                          className="text-center text-white font-semibold rounded-full max-sm:text-nowrap"
-                        >
-                          <span
-                            className={`${
-                              item.stock === 0
-                                ? "bg-red-600"
-                                : item[col] === "Selesai" ||
-                                  item[col] === "Sukses" ||
-                                  item[col] === "Tersedia" ||
-                                  item[col] === "Available"
-                                ? "bg-green-600"
-                                : item[col] === "Non-Active" ||
-                                  item[col] === "Tidak Tersedia"
-                                ? "bg-orange-500"
-                                : item[col] === "Gagal"
-                                ? "bg-red-600"
-                                : ""
-                            } py-1 px-2 rounded-full`}
-                          >
-                            {item.stock === 0 ? "Stock Habis" : item[col]}
-                          </span>
+                        <td key={col}>
+                          <StatusBadge label={item.stock === 0 ? "Stok habis" : item[col]} />
                         </td>
                       );
                     }
@@ -752,8 +726,8 @@ export const TableData = ({
               ))
             ) : (
               <tr>
-                <td colSpan={columns.length + 1} className="text-center">
-                  Tidak ada Data
+                <td colSpan={columns.length + 1} className="table-data-empty">
+                  Belum ada data untuk ditampilkan.
                 </td>
               </tr>
             )}
@@ -761,8 +735,8 @@ export const TableData = ({
         </table>
       </div>
       {isDeleteOpen && (
-        <div className="w-full fixed inset-0 flex items-center justify-center">
-          <div className="w-full h-screen bg-black absolute opacity-50"></div>
+        <div className="table-data-modal-layer">
+          <div className="table-data-modal-backdrop"></div>
           <Modal
             titleModal={"Apakah kamu yakin?"}
             subtitleModal={"Anda tidak dapat mengembalikan penghapusan ini!"}
@@ -780,8 +754,8 @@ export const TableData = ({
       )}
 
       {isDeleteCustomerOpen && (
-        <div className="w-full fixed inset-0 flex items-center justify-center">
-          <div className="w-full h-screen bg-black absolute opacity-50"></div>
+        <div className="table-data-modal-layer">
+          <div className="table-data-modal-backdrop"></div>
           <Modal
             titleModal={"Apakah kamu yakin?"}
             subtitleModal={"Anda tidak dapat mengembalikan penghapusan ini!"}
@@ -799,8 +773,8 @@ export const TableData = ({
       )}
 
       {isRecoveryOpen && (
-        <div className="w-full fixed inset-0 flex items-center justify-center">
-          <div className="w-full h-screen bg-black absolute opacity-50"></div>
+        <div className="table-data-modal-layer">
+          <div className="table-data-modal-backdrop"></div>
           <Modal
             titleModal="Recovery Data?"
             subtitleModal="Apakah Anda ingin mengembalikan data ini?"

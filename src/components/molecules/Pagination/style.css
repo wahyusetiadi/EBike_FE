@@ -1,0 +1,6 @@
+.table-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin: 18px 0 8px; }
+.table-pagination button { display: grid; min-width: 32px; min-height: 32px; place-items: center; padding: 4px 8px; border: 1px solid #e3eae4; border-radius: 8px; background: #fff; color: #52645a; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 140ms ease, border-color 140ms ease, color 140ms ease; }
+.table-pagination button:hover:not(:disabled):not(.is-active) { border-color: #f2ba90; background: #fff6ef; color: #d96517; }
+.table-pagination button.is-active { border-color: #f97316; background: #f97316; color: #fff; }
+.table-pagination button:disabled { opacity: .4; cursor: not-allowed; }
+.table-pagination button:focus-visible { outline: 3px solid rgba(249, 115, 22, .28); outline-offset: 2px; }

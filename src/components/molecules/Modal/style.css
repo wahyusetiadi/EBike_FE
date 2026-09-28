@@ -1,0 +1,11 @@
+.confirm-modal { position:relative; width:min(100%,430px); padding:30px; border:1px solid #e5eae6; border-radius:19px; background:#fff; box-shadow:0 24px 65px #0c221d4d; text-align:center; }
+.confirm-modal__icon { display:grid; width:54px; height:54px; place-items:center; margin:0 auto 17px; border-radius:14px; }
+.confirm-modal__icon svg { width:27px; height:27px; }
+.confirm-modal h2 { color:#284735; font-size:20px; font-weight:750; }
+.confirm-modal p { margin:7px 0 25px; color:#7d8e81; font-size:13px; line-height:1.5; }
+.confirm-modal__actions { display:flex; gap:10px; }
+.confirm-modal__actions button { min-height:43px; flex:1; border:1px solid #dce6de; border-radius:10px; color:#496352; font-size:13px; font-weight:750; }
+.confirm-modal__actions button:hover { background:#f5f8f5; }
+.confirm-modal__actions button:last-child { border-color:transparent; color:#fff; }
+.confirm-modal__actions button:last-child:hover { filter:brightness(.94); }
+@media (max-width:480px) { .confirm-modal { padding:24px 19px; border-radius:16px; } }

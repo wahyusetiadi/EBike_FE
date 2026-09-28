@@ -1,6 +1,6 @@
-import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { useNavigate } from "react-router-dom";
+import "./style.css";
 
 export const ButtonIcon = ({
   icon,
@@ -14,11 +14,9 @@ export const ButtonIcon = ({
   linkTo,
   state, // Accept state prop to pass with navigation
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
   const handleClick = () => {
-    setIsOpen(!isOpen);
     if (onClick) onClick();
 
     if (linkTo) {
@@ -27,25 +25,20 @@ export const ButtonIcon = ({
   };
 
   return (
-    <div className="w-auto">
+    <div className="ui-button-icon-wrap">
       <button
-        className={`w-full text-nowrap flex items-center justify-center rounded gap-2 ${classNameBtn}`}
+        className={`ui-button-icon ${classNameBtn || ""}`}
+        data-variant={classNameBtn?.includes("bg-orange-") ? "primary" : "neutral"}
         onClick={handleClick}
       >
-        <div className={className}>{icon}</div>
-        <div className={`w-full text-start text-sm ${titleColor}`}>{title}</div>
-        <div className="w-full flex justify-end">
-          {showArrow && <ChevronDownIcon className="size-4" />}
-          {/* {showArrow &&
-            (isOpen ? (
-              <></>
-            ) : (
-              // <ChevronUpIcon className="size-4" />
-              // <ChevronDownIcon className="size-4" />
-              <></>
-            ))} */}
-          {endIcon}
-        </div>
+        {icon && <span className={`ui-button-icon-graphic ${className || ""}`}>{icon}</span>}
+        <span className={`ui-button-icon-label ${titleColor || ""}`}>{title}</span>
+        {(showArrow || endIcon) && (
+          <span className="ui-button-icon-end">
+            {showArrow && <ChevronDownIcon className="size-4" />}
+            {endIcon}
+          </span>
+        )}
       </button>
     </div>
   );

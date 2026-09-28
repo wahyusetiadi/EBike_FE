@@ -1,0 +1,143 @@
+.content-layout-shell {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #f4f7f5;
+}
+
+.content-layout-sidebar { display: flex; width: 236px; height: 100dvh; flex: 0 0 236px; flex-direction: column; padding: 24px 16px 16px; border-right: 1px solid #e8eeea; background: #fff; box-shadow: 4px 0 20px rgba(30, 50, 41, .025); }
+.content-layout-side-brand { display: flex; align-items: center; gap: 10px; padding: 4px 7px 19px; color: #ed741f; font-size: 15px; font-weight: 700; text-decoration: none; }
+.content-layout-side-brand img { width: 34px; height: 34px; }
+.content-layout-side-brand span { display: grid; gap: 1px; }
+.content-layout-side-brand small { color: #9aa59f; font-size: 8px; letter-spacing: .16em; }
+.content-layout-side-caption { margin: 7px 8px 10px; color: #a0aaa5; font-size: 9px; font-weight: 700; letter-spacing: .14em; }
+.content-layout-side-links { display: grid; gap: 5px; }
+.content-layout-side-link { display: flex; width: 100%; min-height: 44px; align-items: center; gap: 11px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: #63716b; font: inherit; font-size: 12px; text-align: left; text-decoration: none; cursor: pointer; transition: color 140ms ease, background 140ms ease; }
+.content-layout-side-link svg { width: 18px; height: 18px; flex: 0 0 18px; color: #8b9791; }
+.content-layout-side-link:hover, .content-layout-side-link.is-active { background: #fff1e6; color: #d95f13; }
+.content-layout-side-link.is-active { font-weight: 600; }
+.content-layout-side-link:hover svg, .content-layout-side-link.is-active svg { color: #e66a1a; }
+.content-layout-side-footer { display: grid; gap: 6px; margin-top: auto; padding-top: 12px; border-top: 1px solid #edf0ee; }
+.content-layout-side-footer > p { display: grid; gap: 2px; margin: 0 7px 5px; color: #939e99; font-size: 9px; }
+.content-layout-side-footer > p b { color: #52615a; font-size: 11px; }
+.content-layout-side-footer > p small { color: #a3ada7; font-size: 9px; text-transform: capitalize; }
+.content-layout-side-logout { color: #b8493b; }
+.content-layout-side-logout svg { color: #b8493b; }
+.content-layout-side-link:focus-visible { outline: 3px solid rgba(249, 115, 22, 0.35); outline-offset: 2px; }
+.content-layout-main { position: relative; display: flex; min-width: 0; min-height: 0; flex: 1; flex-direction: column; overflow: hidden; }
+.content-layout-mobile-header { display: none; }
+.content-layout-scroll { min-height: 0; flex: 1; overflow: auto; padding: 20px; }
+.content-layout-surface { min-height: 100%; min-width: 0; overflow: hidden; border: 1px solid #e8eeea; border-radius: 18px; background: #fff; box-shadow: 0 5px 24px rgba(31, 55, 45, .035); }
+.content-layout-loader { display: grid; min-height: 280px; place-items: center; }
+.content-layout-mobile-menu, .content-layout-bottom-nav { display: none; }
+
+.content-layout-surface h1 { color: #1f352e; letter-spacing: -.035em; }
+.content-layout-surface hr { border-color: #edf1ee; }
+.content-layout-surface input:not([type="checkbox"]):not([type="radio"]), .content-layout-surface select, .content-layout-surface textarea { border-radius: 10px; }
+.content-layout-surface table { border-collapse: separate; border-spacing: 0; border: 1px solid #e8eeea; border-radius: 12px; box-shadow: none; }
+.content-layout-surface table thead { background: #f5f8f6; color: #4a5d53; }
+.content-layout-surface table th { padding: 15px 16px; border-bottom: 1px solid #e8eeea; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.content-layout-surface table td { padding: 12px 16px; border-right: 0; border-bottom: 1px solid #f0f2f0; color: #43564c; }
+.content-layout-surface table tbody tr:last-child td { border-bottom: 0; }
+.content-layout-surface table tbody tr:hover { background: #fbfdfb; }
+
+@media (min-width: 1280px) {
+  .content-layout-sidebar { width: 252px; flex-basis: 252px; }
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  .content-layout-sidebar { width: 204px; flex-basis: 204px; padding-inline: 12px; }
+  .content-layout-scroll { padding: 12px; }
+}
+
+@media (max-width: 767px) {
+  .content-layout-sidebar { display: none; }
+  .content-layout-mobile-header {
+    z-index: 10;
+    display: flex;
+    min-height: 58px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 18px;
+    border-bottom: 1px solid #e8eeea;
+    background: #fff;
+  }
+
+  .content-layout-brand { display: inline-flex; align-items: center; gap: 8px; color: #ed741f; font-size: 15px; font-weight: 700; text-decoration: none; }
+  .content-layout-brand img { width: 29px; height: 29px; }
+  .content-layout-current-page { overflow: hidden; margin-left: auto; color: #75817c; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+  .content-layout-menu-toggle { display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border: 1px solid #e7ece8; border-radius: 10px; background: #fff; color: #30453d; cursor: pointer; }
+  .content-layout-menu-toggle svg { width: 20px; height: 20px; }
+  .content-layout-menu-toggle:focus-visible, .content-layout-mobile-link:focus-visible { outline: 3px solid rgba(249, 115, 22, 0.35); outline-offset: 2px; }
+
+  .content-layout-mobile-menu {
+    z-index: 9;
+    display: grid;
+    max-height: min(72dvh, 560px);
+    flex: 0 0 auto;
+    gap: 4px;
+    overflow-y: auto;
+    padding: 13px 15px 15px;
+    border-bottom: 1px solid #e8eeea;
+    background: #fff;
+    box-shadow: 0 12px 20px rgba(25, 46, 37, 0.08);
+  }
+
+  .content-layout-menu-caption { margin: 2px 5px 7px; color: #9aa59f; font-size: 9px; font-weight: 700; letter-spacing: 0.14em; }
+  .content-layout-mobile-link { display: flex; min-height: 42px; align-items: center; gap: 11px; padding: 0 11px; border: 0; border-radius: 10px; background: transparent; color: #50625a; font: inherit; font-size: 12px; text-align: left; text-decoration: none; cursor: pointer; }
+  .content-layout-mobile-link svg { width: 18px; height: 18px; color: #89968f; }
+  .content-layout-mobile-link:hover, .content-layout-mobile-link.is-active { background: #fff2e8; color: #d96214; }
+  .content-layout-mobile-link.is-active { font-weight: 600; }
+  .content-layout-mobile-link:hover svg, .content-layout-mobile-link.is-active svg { color: #e66a1a; }
+  .content-layout-mobile-link.content-layout-logout { border-top: 1px solid #edf0ee; border-radius: 0; margin-top: 5px; padding-top: 6px; color: #b8493b; }
+  .content-layout-mobile-link.content-layout-logout svg { color: #b8493b; }
+  .content-layout-user-label { margin: 9px 5px 0; padding-top: 10px; border-top: 1px solid #edf0ee; color: #8a9690; font-size: 10px; }
+  .content-layout-user-label b { color: #46564f; }
+  .content-layout-scroll { padding: 10px; }
+
+  .content-layout-bottom-nav {
+    z-index: 10;
+    display: grid;
+    min-height: 63px;
+    flex: 0 0 auto;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: stretch;
+    padding: 5px 8px max(5px, env(safe-area-inset-bottom));
+    border-top: 1px solid #e8eeea;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 -5px 18px rgba(25, 46, 37, 0.045);
+  }
+
+  .content-layout-dock-link {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px 2px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #89958f;
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .content-layout-dock-link svg { width: 20px; height: 20px; }
+  .content-layout-dock-link span { max-width: 100%; overflow: hidden; font-size: 8px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+  .content-layout-dock-link.is-active { color: #e56b1b; }
+  .content-layout-dock-link.is-active span { font-weight: 700; }
+  .content-layout-dock-link:focus-visible { outline: 3px solid rgba(249, 115, 22, 0.35); outline-offset: 1px; }
+}
+
+@media (max-width: 520px) {
+  .content-layout-mobile-header { min-height: 54px; padding: 0 13px; }
+  .content-layout-scroll { padding: 0 0 8px; }
+  .content-layout-surface { min-height: 100%; border: 0; border-radius: 0; }
+}

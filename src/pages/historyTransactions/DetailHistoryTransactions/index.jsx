@@ -1,420 +1,160 @@
-import React, { useEffect, useState } from "react";
-import { ContentLayout } from "../../../components/organisms/ContentLayout";
-import { ButtonIcon } from "../../../components/molecules/ButtonIcon";
+import { useEffect, useRef, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import {
-  ChevronLeftIcon,
-  ExclamationTriangleIcon,
+  ArrowLeftIcon,
+  BanknotesIcon,
+  CheckCircleIcon,
+  PrinterIcon,
+  ReceiptPercentIcon,
+  UserIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { ContentLayout } from "../../../components/organisms/ContentLayout";
 import { TableData } from "../../../components/organisms/TableData";
-import { useParams } from "react-router-dom";
 import { getHistoryTransactionDetail, updatePaid } from "../../../api/api";
-import { ClipLoader } from "react-spinners";
 import { formatCurrency } from "../../../utils";
+import "./style.css";
+
+const isPaid = (transaction) =>
+  transaction?.lunas === true ||
+  transaction?.lunas === 1 ||
+  transaction?.lunas === "true" ||
+  Number(transaction?.hutang ?? 0) <= 0;
+
+const displayDate = (value) => {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? "—" : new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric" }).format(parsed);
+};
 
 export const DetailHistoryTransactions = () => {
   const { id } = useParams();
-  const [transactionsDetail, setTransactionsDetail] = useState(null);
+  const [transaction, setTransaction] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [loadingSubmit, setLoadingSubmit] = useState(false)
-  const [error, setError] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isOn, setIsOn] = useState(false);
-  const [status, setStatus] = useState("");
-  const [message, setMessage] = useState("");
-  const [lunas, setLunas] = useState("");
-  const [debt, setDebt] = useState("");
-  const [isDebt, setIsDebt] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formPaid, setFormPaid] = useState(false);
+  const [formDebt, setFormDebt] = useState("0");
+  const [formError, setFormError] = useState("");
+  const closeRef = useRef(null);
 
-  const handleToggleState = () => {
-    setIsOn(!isOn);
-
-    if (!isOn) {
-      setTransactionsDetail({
-        ...transactionsDetail,
-        hutang: transactionsDetail?.hutang || 0,
-      });
-    }
-  };
-
-  const fetchTransactionDetails = async () => {
+  const loadDetail = async () => {
+    setLoading(true);
+    setError("");
     try {
-      setLoading(true);
-      setError(null);
       const response = await getHistoryTransactionDetail(id);
-
-      // Check if we have valid data
-      if (response && response.data) {
-        setTransactionsDetail(response.data);
-      } else if (response) {
-        setTransactionsDetail(response);
-      } else {
-        throw new Error("No data received from server");
-      }
-    } catch (error) {
-      console.error("Error fetching transaction details:", error);
-      setError(error.message || "Failed to fetch transaction details");
+      const detail = response?.data || response;
+      if (!detail) throw new Error("Detail transaksi tidak ditemukan.");
+      setTransaction(detail);
+    } catch (err) {
+      console.error("Gagal memuat detail transaksi:", err);
+      setError(err.message || "Detail transaksi belum dapat dimuat.");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => { if (id) loadDetail(); }, [id]);
   useEffect(() => {
-    if (id) {
-      fetchTransactionDetails();
-    }
-  }, [id]);
-
-  useEffect(() => {
-    if (transactionsDetail?.hutang <= 0) {
-      setIsOn(true);
-    }
-  }, [transactionsDetail?.hutang]);
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    const hutang = isOn ? 0 : Number(transactionsDetail.hutang);
-    const lunas = isOn ? true : false;
-
-    console.log("hutang:", hutang);
-
-    if (isNaN(hutang)) {
-      console.error("Hutang harus berupa angka");
-      setMessage("Hutang harus berupa angka");
-      return;
-    }
-
-    const payload = {
-      lunas: lunas,
-      hutang: hutang,
+    if (!modalOpen) return;
+    closeRef.current?.focus();
+    const onKeyDown = (event) => {
+      if (event.key === "Escape" && !saving) setModalOpen(false);
     };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [modalOpen, saving]);
 
-    console.log("payload yang akan dikirim:", payload);
-
-    try {
-      const result = await updatePaid(id, payload);
-
-      setTimeout(() => {
-        if (result?.success) setMessage("Update detail transaksi berhasil");
-        else setMessage("Gagal Update detail transaksi");
-        setTimeout(() => {
-          setMessage("");
-        }, 2000);
-        setLoading(false);
-      });
-      // console.log("update paid", result.error.meta);
-    } catch (error) {
-      setMessage(`Error:  ${error.message}`);
-    } finally {
-      fetchTransactionDetails();
-      setIsModalOpen(false);
-    }
+  const openModal = () => {
+    setFormPaid(isPaid(transaction));
+    setFormDebt(String(transaction?.hutang ?? 0));
+    setFormError("");
+    setModalOpen(true);
   };
 
-  const handleChange = (e) => {
-    setIsDebt(e.target.value);
+  const handleSave = async (event) => {
+    event.preventDefault();
+    const debt = formPaid ? 0 : Number(formDebt);
+    if (!Number.isFinite(debt) || debt < 0) {
+      setFormError("Masukkan jumlah hutang yang valid.");
+      return;
+    }
+    setSaving(true);
+    setFormError("");
+    try {
+      const result = await updatePaid(id, { lunas: formPaid, hutang: debt });
+      if (result?.success === false) throw new Error("Perubahan pembayaran gagal disimpan.");
+      setModalOpen(false);
+      setNotice("Status pembayaran berhasil diperbarui.");
+      await loadDetail();
+    } catch (err) {
+      setFormError(err.message || "Perubahan gagal disimpan. Silakan coba lagi.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handlePrintReceipt = () => {
-    const {
-      transactionCode,
-      items,
-      total,
-      description,
-      date,
-      customer,
-      hutang,
-      discount,
-      note,
-    } = transactionsDetail;
-
-    console.log("Storing transaction data to sessionStorage:", {
-      transactionCode,
-      items,
-      total,
-      metodePembayaran: description,
-      date,
-      customer,
-      hutang,
-      discount,
-      note,
-    });
-
-    sessionStorage.setItem(
-      "transactionData",
-      JSON.stringify({
-        transactionCode,
-        items,
-        total,
-        metodePembayaran: description,
-        date,
-        customer,
-        hutang,
-        discount,
-        note,
-      })
-    );
-
-    setTimeout(() => {
-      const newTab = window.open("/payment", "_blank");
-      newTab?.focus();
-    }, 100);
+    if (!transaction) return;
+    const { transactionCode, items, total, description, date, customer, hutang, discount, note } = transaction;
+    sessionStorage.setItem("transactionData", JSON.stringify({
+      transactionCode, items, total, metodePembayaran: description, date, customer, hutang, discount, note,
+    }));
+    const printTab = window.open("/payment", "_blank");
+    if (printTab) printTab.focus();
+    else setNotice("Browser memblokir halaman struk. Izinkan pop-up, lalu coba lagi.");
   };
-
-  const openModal = () => {
-    setIsModalOpen(true);
-  };
-
-  const closeModal = async () => {
-    setIsModalOpen(false);
-  };
-
-  if (loading) {
-    return (
-      <ContentLayout>
-        <div className="p-6 flex justify-center items-center">
-          <p className="text-lg">Loading...</p>
-        </div>
-      </ContentLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <ContentLayout>
-        <div className="p-6">
-          <ButtonIcon
-            icon={<ChevronLeftIcon className="h-6 text-orange-500" />}
-            title="Kembali"
-            titleColor="text-orange-600 font-semibold text-base"
-            showArrow={false}
-            linkTo="/riwayat-transaksi"
-          />
-          <div className="mt-4 text-red-600">
-            <p>{error}</p>
-          </div>
-        </div>
-      </ContentLayout>
-    );
-  }
-
-  if (!transactionsDetail) {
-    return (
-      <ContentLayout>
-        <div className="p-6">
-          <ButtonIcon
-            icon={<ChevronLeftIcon className="h-6 text-orange-500" />}
-            title="Kembali"
-            titleColor="text-orange-600 font-semibold text-base"
-            showArrow={false}
-            linkTo="/riwayat-transaksi"
-          />
-          <div className="mt-4">
-            <p>No transaction details found.</p>
-          </div>
-        </div>
-      </ContentLayout>
-    );
-  }
 
   return (
     <ContentLayout>
-      {message && (
-        <>
-        <div className="w-full mt-4 p-4 fixed bg-green-100 border-l-4 border-green-500 text-green-700">
-          <p>{message}</p>
-        </div>
-        </>
-      )}
-
-      <div className="pb-6">
-        <div className="p-6 w-fit">
-          <ButtonIcon
-            icon={<ChevronLeftIcon className="h-6 text-orange-500" />}
-            title="Kembali"
-            titleColor="text-orange-600 font-semibold text-base"
-            showArrow={false}
-            linkTo="/riwayat-transaksi"
-          />
-        </div>
-        <div className="px-6">
-          <div className="w-full flex flex-col gap-10 text-center">
-            <h1 className="text-2xl font-bold">Detail Transaksi</h1>
-
-            <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="text-start w-full flex flex-col gap-2">
-                <p className="text-slate-600 font-medium text-xs">
-                  Nama Pelanggan
-                </p>
-                <h1 className="text-base font-bold">
-                  {transactionsDetail.customer || "undefined"}
-                </h1>
-                <hr />
-              </div>
-
-              <div className="text-start w-full flex flex-col gap-2">
-                <p className="text-slate-600 font-medium text-xs">
-                  Kode Transaksi
-                </p>
-                <h1 className="text-base font-bold">
-                  {transactionsDetail.transactionCode || "undefined"}
-                </h1>
-                <hr />
-              </div>
-
-              <div className="text-start w-full flex flex-col gap-2">
-                <p className="text-slate-600 font-medium text-xs">
-                  Jenis Pembayaran
-                </p>
-                <h1 className="text-base font-bold">
-                  {transactionsDetail.description || "undefined"}
-                </h1>
-                <hr />
-              </div>
-
-              <div className="text-start w-full flex flex-col gap-2">
-                <p className="text-slate-600 font-medium text-xs">Hutang</p>
-                <h1 className="text-base font-bold">
-                  {transactionsDetail.hutang || 0}
-                </h1>
-                <hr />
-              </div>
+      <main className="history-detail-page">
+        <Link to="/riwayat-transaksi" className="history-detail-back"><ArrowLeftIcon /> Kembali ke riwayat transaksi</Link>
+        {loading ? <div className="history-detail-state">Memuat detail transaksi...</div> : error || !transaction ? (
+          <div className="history-detail-state"><h2>Detail belum tersedia</h2><p>{error || "Transaksi tidak ditemukan."}</p><button type="button" onClick={loadDetail}>Coba lagi</button></div>
+        ) : (
+          <>
+            <header className="history-detail-header">
+              <div><span><ReceiptPercentIcon /> RINCIAN TRANSAKSI</span><h1>Detail transaksi</h1><p>{displayDate(transaction.date || transaction.createdAt)}</p></div>
+              <div className="history-detail-header__actions"><button type="button" onClick={openModal}>Ubah pembayaran</button><button type="button" onClick={handlePrintReceipt}><PrinterIcon /> Cetak struk</button></div>
+            </header>
+            {notice && <p className="history-detail-notice" role="status">{notice}</p>}
+            <section className="history-detail-meta" aria-label="Informasi transaksi">
+              <article><span className="history-detail-meta__icon"><UserIcon /></span><div><small>Pelanggan</small><strong>{transaction.customer || "Tidak tercatat"}</strong></div></article>
+              <article><span className="history-detail-meta__icon"><ReceiptPercentIcon /></span><div><small>Kode transaksi</small><strong>{transaction.transactionCode || "—"}</strong></div></article>
+              <article><span className="history-detail-meta__icon"><BanknotesIcon /></span><div><small>Metode pembayaran</small><strong>{transaction.description || "Tidak tercatat"}</strong></div></article>
+              <article><span className="history-detail-meta__icon"><CheckCircleIcon /></span><div><small>Status pembayaran</small><strong className={isPaid(transaction) ? "history-detail-badge is-paid" : "history-detail-badge is-unpaid"}>{isPaid(transaction) ? "Lunas" : "Belum lunas"}</strong></div></article>
+            </section>
+            <section className="history-detail-products" aria-label="Daftar barang">
+              <div className="history-detail-section-heading"><div><h2>Daftar produk</h2><p>{Array.isArray(transaction.items) ? `${transaction.items.length} jenis barang dalam transaksi` : "Rincian barang dalam transaksi"}</p></div></div>
+              {Array.isArray(transaction.items) && transaction.items.length > 0 ? (
+                <TableData data={transaction.items.map(({ stock, price_ecer, price_grosir, ...item }) => item)} showPagination={false} />
+              ) : <p className="history-detail-empty">Data produk tidak tersedia untuk transaksi ini.</p>}
+            </section>
+            <div className="history-detail-bottom">
+              <section className="history-detail-note"><h2>Catatan transaksi</h2><p>{transaction.note || "Tidak ada catatan untuk transaksi ini."}</p></section>
+              <section className="history-detail-totals"><h2>Ringkasan pembayaran</h2><div><span>Diskon</span><strong>- {formatCurrency(transaction.discount || 0)}</strong></div><div><span>Hutang</span><strong>{formatCurrency(transaction.hutang || 0)}</strong></div><div className="history-detail-totals__total"><span>Total transaksi</span><strong>{formatCurrency(transaction.total || 0)}</strong></div></section>
             </div>
+          </>
+        )}
+      </main>
 
-            <div>
-              <div className="text-start w-full flex items-center justify-between">
-                <h1 className="text-xl font-bold">Daftar Produk</h1>
-                <div className="w-auto flex gap-2">
-                  <button
-                    onClick={openModal}
-                    className="px-6 py-2 border-2 border-orange-600 text-orange rounded-lg text-orange-600 font-semibold"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={handlePrintReceipt}
-                    className="px-6 py-2 border-2 border-orange-600 text-orange rounded-lg text-orange-600 font-semibold"
-                  >
-                    Cetak Struk
-                  </button>
-                </div>
+      {modalOpen && (
+        <div className="history-payment-layer">
+          <button type="button" className="history-payment-backdrop" aria-label="Tutup modal pembayaran" onClick={() => !saving && setModalOpen(false)} />
+          <section className="history-payment-modal" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title">
+            <header><div><span>PEMBAYARAN TRANSAKSI</span><h2 id="payment-modal-title">Ubah status pembayaran</h2><p>Periksa sisa hutang sebelum menyimpan perubahan.</p></div><button type="button" ref={closeRef} aria-label="Tutup modal" onClick={() => setModalOpen(false)} disabled={saving}><XMarkIcon /></button></header>
+            <form onSubmit={handleSave}>
+              <div className="history-payment-modal__body">
+                <div className="history-payment-modal__context"><span>Kode transaksi</span><strong>{transaction?.transactionCode || "—"}</strong></div>
+                <button type="button" className="history-payment-switch-row" role="switch" aria-checked={formPaid} onClick={() => setFormPaid((current) => !current)}><span><strong>Pembayaran lunas</strong><small>{formPaid ? "Seluruh hutang akan menjadi Rp 0." : "Masukkan sisa hutang di bawah."}</small></span><span className={`history-payment-switch${formPaid ? " is-on" : ""}`}><span /></span></button>
+                <div className="history-payment-field"><label htmlFor="payment-debt">Sisa hutang</label><div><span>Rp</span><input id="payment-debt" type="number" min="0" step="1" value={formPaid ? 0 : formDebt} onChange={(event) => setFormDebt(event.target.value)} disabled={formPaid} required /></div></div>
+                {formError && <p className="history-payment-error" role="alert">{formError}</p>}
               </div>
-              {Array.isArray(transactionsDetail) ||
-              Array.isArray(transactionsDetail?.items) ? (
-                <TableData
-                  data={
-                    Array.isArray(transactionsDetail)
-                      ? transactionsDetail.map(({ stock, price_ecer, price_grosir, ...rest }) => rest) // Menghapus kolom "stock"
-                      : transactionsDetail.items.map(
-                          ({ stock, price_ecer, price_grosir, ...rest }) => rest
-                        )
-                  }
-                  showPagination={false}
-                />
-              ) : (
-                <p className="text-center mt-4">No product data available</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="w-full text-left px-6 text-sm">
-        <p><b>Catatan: </b> {transactionsDetail.note || "tidak ada catatan"}</p>
-      </div>
-      <div className="px-6 pr-36 w-full flex flex-col justify-end text-right font-bold pb-4">
-        <p className="font-medium">Discount : {formatCurrency((transactionsDetail.discount))}</p>
-        <p>Total : {formatCurrency((transactionsDetail.total) )}</p>
-
-      </div>
-
-      {isModalOpen && (
-        <div className="w-full fixed inset-0 flex items-center justify-center">
-          <div className="w-full h-screen bg-black absolute opacity-50"></div>
-          <div className="bg-white p-6 rounded-lg shadow-lg z-10 w-[480px] max-md:w-[300px] flex items-center justify-center flex-col gap-4">
-            <div className="w-full flex flex-col items-center justify-center gap-5">
-              <div className="w-full flex flex-col text-center items-center justify-center">
-                <h3 className="text-xl max-md:text-base font-semibold">Edit</h3>
-                <p className="text-base max-md:text-xs text-[#64748B] px-12">
-                  Pastikan Customer sudah melakukan pelunasan.
-                </p>
-              </div>
-            </div>
-
-            <form
-              action=""
-              onSubmit={handleSubmit}
-              className="flex flex-col gap-2"
-            >
-              <div className="w-full flex flex-col gap-2">
-                <label htmlFor="">Hutang</label>
-                <input
-                  type="text"
-                  className="px-4 py-2 border-2 rounded max-md:text-xs"
-                  value={isOn ? 0 : transactionsDetail.hutang}
-                  onChange={(e) => {
-                    if (!isOn) {
-                      const updatedHutang = e.target.value;
-                      if (/^\d*$/.test(updatedHutang)) {
-                        setTransactionsDetail({
-                          ...transactionsDetail,
-                          hutang: updatedHutang || 0,
-                        });
-                      }
-                    }
-                  }}
-                  disabled={isOn}
-                />
-              </div>
-              <div className="">
-                <div
-                  className={`w-full justify-start relative inline-flex items-center cursor-pointer gap-3 ${
-                    isOn ? "justify-start" : "justify-start"
-                  }`}
-                  onClick={handleToggleState}
-                >
-                  <span
-                    className={`w-10 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${
-                      isOn ? "bg-orange-600" : "bg-gray-300"
-                    }`}
-                  >
-                    <span
-                      className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-all duration-300 ${
-                        isOn ? "translate-x-4" : "translate-x-0"
-                      }`}
-                    />
-                  </span>
-
-                  {isOn ? (
-                    <p className="mr-2">Lunas</p>
-                  ) : (
-                    <p className="mr-2">Belum Lunas</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="w-full flex gap-4 items-center justify-between">
-                <button
-                  onClick={closeModal}
-                  className="w-full px-10 py-3 max-md:text-xs max-md:px-7 border-2 text-red-600 text-base font-semibold border-red-600 rounded-full"
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={loadingSubmit}
-                  className="w-full px-10 py-3 max-md:text-xs max-md:px-7 text-white text-base font-semibold bg-orange-600 rounded-full"
-                >
-                  {loadingSubmit ? (
-                    <ClipLoader
-                      size={24}
-                      color="#fff"
-                      loading={loadingSubmit}
-                    />
-                  ) : (
-                    "Simpan"
-                  )}
-                </button>
-              </div>
+              <footer><button type="button" onClick={() => setModalOpen(false)} disabled={saving}>Batal</button><button type="submit" disabled={saving}>{saving ? "Menyimpan..." : "Simpan perubahan"}</button></footer>
             </form>
-          </div>
+          </section>
         </div>
       )}
     </ContentLayout>

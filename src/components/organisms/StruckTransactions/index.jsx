@@ -1,8 +1,12 @@
 import React from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { formatCurrency } from "../../../utils";
+import "../../../pages/Transactions/receipt.css";
+import { getReceiptSettings } from "../../../utils/receiptSettings";
+import { ReceiptFooter, ReceiptHeader } from "../ReceiptSections";
 
 export const StruckTransactions = () => {
+  const receiptSettings = getReceiptSettings();
   const location = useLocation();
   const { transactionCode } = location.state || {};
   const { description } = location.state || {};
@@ -10,20 +14,29 @@ export const StruckTransactions = () => {
   const total = location.state?.total || 0;
   const date = new Date();
 
-  return (
-    <div>
-      <div className="w-full flex justify-center">
-        <div className="w-[300px] my-6 flex flex-col bg-white rounded-lg p-4 text-xs font-mono border border-gray-300">
-          {/* Header */}
-          <div className="text-center">
-            <h1 className="font-bold">E-Bike Management</h1>
-            <p>Jl. Veteran No. 123</p>
-            <p>Telp: 0812-3456-7890</p>
-          </div>
+  if (!transactionCode && addItems.length === 0) {
+    return (
+      <div className="receipt-page">
+        <div className="receipt-empty">
+          <h1>Struk belum tersedia</h1>
+          <p>Mulai transaksi dan selesaikan pembayaran untuk melihat struk.</p>
+          <Link to="/transaksi/eceran">Mulai transaksi</Link>
+        </div>
+      </div>
+    );
+  }
 
-          <div className="mt-2 text-sm border">
+  return (
+    <div className="receipt-page">
+      <div className="receipt-page__intro"><h1>Struk transaksi</h1><p>Periksa rincian sebelum mencetak.</p></div>
+      <div className="w-full flex justify-center">
+        <div className="receipt-card flex flex-col">
+          {/* Header */}
+          <ReceiptHeader settings={receiptSettings} />
+
+          <div className="mt-2 text-sm">
             <div className="text-center">
-              <p className="font-semibold">Struk Pembelian</p>
+              <p className="font-semibold">{receiptSettings.receiptTitle}</p>
               <p>
                 ID Transaksi: <br /> {transactionCode}
               </p>
@@ -81,24 +94,11 @@ export const StruckTransactions = () => {
           <hr className="my-2" />
 
           {/* Footer */}
-          <div className="text-center text-xs text-gray-600">
-            <p>
-              Terima kasih telah berbelanja di <br /> E-Bike Management
-            </p>
-            <p>www.e-bikemanagement.com</p>
-            <p>Pastikan untuk menyimpan struk ini sebagai bukti transaksi.</p>
-          </div>
+          <ReceiptFooter settings={receiptSettings} />
 
-          <div className="mt-4 flex justify-center">
-            <button
-              onClick={() => window.print()}
-              className="bg-orange-600 text-white px-4 py-2 rounded-full text-sm"
-            >
-              Cetak Struk
-            </button>
-          </div>
         </div>
       </div>
+      <div className="receipt-actions"><button type="button" onClick={() => window.print()}>Cetak struk</button></div>
     </div>
   );
 };

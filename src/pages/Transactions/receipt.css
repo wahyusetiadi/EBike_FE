@@ -1,0 +1,20 @@
+.receipt-page { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:18px; padding:36px 16px 64px; background:#f4f8f5; color:#234035; }
+.receipt-page__intro { width:min(100%,420px); text-align:center; }
+.receipt-page__intro h1 { font-size:25px; font-weight:750; }
+.receipt-page__intro p { margin-top:4px; color:#718b7c; font-size:13px; }
+.receipt-card { width:min(100%,420px); min-width:0; margin:0; padding:28px; background:#fff; border:1px solid #dfe9e2; border-radius:18px; box-shadow:0 18px 50px #17483218; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:12px; line-height:1.6; text-align:left; overflow-wrap:anywhere; }
+.receipt-card > .text-center:first-child { padding-bottom:14px; }
+.receipt-card > .text-center:first-child h1 { color:#1e5339; font-size:17px; line-height:1.3; }
+.receipt-card hr { border:0; border-top:1px dashed #c9d7cc; margin:14px 0; }
+.receipt-card .flex.justify-between { gap:12px; align-items:flex-start; }
+.receipt-card .flex.justify-between > :last-child { text-align:right; white-space:nowrap; }
+.receipt-card .font-semibold { color:#1c4c35; }
+.receipt-card .text-gray-600 { color:#74877a; }
+.receipt-actions { width:min(100%,420px); display:flex; justify-content:center; }
+.receipt-actions button { width:100%; min-height:46px; border:0; border-radius:11px; background:#f97316; color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; }
+.receipt-actions button:hover { background:#e6600d; }
+.receipt-empty { width:min(100%,420px); padding:32px; border:1px solid #dfe9e2; border-radius:18px; background:#fff; text-align:center; box-shadow:0 18px 50px #17483218; }
+.receipt-empty h1 { color:#1f4937; font-size:21px; font-weight:750; }
+.receipt-empty p { margin:8px 0 22px; color:#74887a; font-size:14px; }
+.receipt-empty a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 18px; border-radius:11px; background:#f97316; color:#fff; font-size:14px; font-weight:700; }
+@media print { @page { margin:7mm; } body { background:#fff !important; } .receipt-page { min-height:0; display:block; padding:0; background:#fff; } .receipt-page__intro,.receipt-actions { display:none !important; } .receipt-card { width:80mm; max-width:100%; padding:0; margin:0 auto; border:0; border-radius:0; box-shadow:none; color:#111; } }
